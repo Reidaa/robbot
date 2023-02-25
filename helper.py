@@ -1,14 +1,15 @@
 from datetime import datetime, timedelta
+from typing import Dict, Callable
 
 
-def cooldown(duration):
-    last_called = {}
+def cooldown(duration: float):
+    last_called: Dict[Callable, datetime] = {}
 
-    def decorator(wrapped):
+    def decorator(wrapped: Callable):
         async def wrapper(*args, **kwargs):
             # Check when the function was last called
             now = datetime.now()
-            if wrapped in last_called and now - last_called[wrapped] < timedelta(seconds=duration):
+            if (wrapped in last_called) and (now - last_called[wrapped] < timedelta(seconds=duration)):
                 return  # Do nothing
 
             # Call the wrapped function and update the last called time
