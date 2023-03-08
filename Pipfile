@@ -8,6 +8,7 @@ name = "pypi"
 requests = "*"
 python-dotenv = "*"
 praw = "*"
+asyncpraw = "*"
 
 [dev-packages]
 
