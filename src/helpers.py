@@ -1,3 +1,6 @@
+import os
+import random
+import re
 from datetime import datetime, timedelta
 from typing import Dict, Callable
 
@@ -21,8 +24,27 @@ def cooldown(duration: float):
 
     return decorator
 
-def user_ping(id: int) -> str:
-    return f"<@{id}>"
 
-def role_ping(id: int) -> str:
-    return f"<@&{id}>"
+def random_number() -> int:
+    return random.randint(0, 100)
+
+
+def is_testing():
+    return True if ("test" in os.getenv("ENV")) else False
+
+
+def get_chapter_number(txt: str) -> int:
+    match = re.search(r'chapter\s+(\d+)', txt.lower())
+    if match:
+        chapter_number = match.group(1)
+        return int(chapter_number)
+    else:
+        return -1
+
+
+def is_citation(txt: str) -> bool:
+    match = re.match(r"^([A-Za-z]+):\s*", txt)
+    if match:
+        return True
+    else:
+        return False

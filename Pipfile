@@ -9,6 +9,8 @@ requests = "*"
 python-dotenv = "*"
 praw = "*"
 asyncpraw = "*"
+pony = "*"
+psycopg2-binary = "*"
 
 [dev-packages]
 
