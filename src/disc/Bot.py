@@ -1,11 +1,22 @@
 import asyncio
 import os
-import re
 
 import discord
 
-from src.disc.events import is_feur, is_quoi, is_leandre, on_quoi, on_citation, on_feur
-from src.helpers import is_testing, is_citation
+from src.helpers import is_testing
+from src.reddit import manga
+
+CHANNELS = [
+    "1082820297876574242",
+]
+
+SERIES = {
+    "Chainsaw Man": {
+        "chapters": 122,
+        "roles": [1077695451148599398, ],
+        "users": [""]
+    }
+}
 
 
 class MyBot(discord.Client):
@@ -34,6 +45,11 @@ class MyBot(discord.Client):
     async def on_ready(self):
         print('Logged on as', self.user)
         while True:
+            t = await find_new_chapters("chainsaw")
+            for channel_id in CHANNELS:
+                channel = self.get_channel(int(channel_id))
+                await channel.send("Weeb Testing, next test in 60 seconds")
+                await channel.send(t)
             await asyncio.sleep(60)
 
     async def on_message(self, message):
@@ -44,11 +60,10 @@ class MyBot(discord.Client):
         if message.content == 'ping':
             return await message.channel.send('pong')
 
-        if is_leandre(message.author) and is_quoi(message.content):
-            return await on_quoi(message)
 
-        if is_leandre(message.author) and is_feur(message.content):
-            return await on_feur(message)
-
-        if is_citation(message.content):
-            return await on_citation(message)
+async def find_new_chapters(title: str) -> str | None:
+    result = await manga.search_manga(title)
+    if result:
+        return f"{result['title']}: {result['link']}"
+    else:
+        return f"Did not found {title}"

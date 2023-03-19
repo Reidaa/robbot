@@ -1,9 +1,8 @@
-import asyncpraw
 from asyncpraw.models import Submission
-import os
 
 from src.helpers import get_chapter_number
 from src.reddit.helpers import get_async_reddit
+
 
 async def search_manga_posts(title: str) -> list:
     posts = []

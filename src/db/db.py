@@ -1,5 +1,4 @@
 from pony import orm
-import os
 
 db = orm.Database()
 
@@ -7,12 +6,6 @@ db = orm.Database()
 class Manga(db.Entity):
     name = orm.Required(str, unique=True)
     last_chapter = orm.Required(int)
-
-class Citation(db.Entity):
-    author = orm.Required(str)
-    who = orm.Required(str)
-    content = orm.Required(str)
-    time = orm.Required(int)
 
 
 
