@@ -1,5 +1,6 @@
 import pprint
 import sys
+from datetime import datetime
 
 
 class Logger:
@@ -8,32 +9,24 @@ class Logger:
 
     @staticmethod
     def stdout(*value: object):
-        return print(*value)
+        print(datetime.now(), *value)
 
     @staticmethod
     def stderr(*value: object):
-        return print(*value, file=sys.stderr)
-
-    @staticmethod
-    def pretty(*value: object):
-        return pprint.pprint(*value)
-
-
-def stdout(*value: object):
-    return Logger.stdout("# ", *value)
-
-
-def debug(*value: object):
-    return Logger.stdout("[DEBUG]", *value)
-
-
-def info(*value: object):
-    return Logger.stdout("[INFO]", *value)
-
-
-def pretty(*value: object):
-    return Logger.pretty(*value)
+        print(datetime.now(), *value, file=sys.stderr)
 
 
 def error(*value: object):
-    return Logger.stderr("[ERROR]", *value)
+    Logger.stderr("[ERROR]", *value)
+
+
+def info(*value: object):
+    Logger.stdout("[INFO]", *value)
+
+
+def debug(*value: object):
+    Logger.stdout("[DEBUG]", *value)
+
+
+def pretty(*value: object):
+    pprint.pprint(datetime.now(), *value)

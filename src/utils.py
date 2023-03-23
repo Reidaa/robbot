@@ -1,6 +1,7 @@
 import os
 import re
 
+
 def is_testing():
     return True if ("test" in os.getenv("ENV")) else False
 
@@ -12,3 +13,11 @@ def get_chapter_number(txt: str) -> int:
         return int(chapter_number)
     else:
         return -1
+
+
+def user_ping(id: int) -> str:
+    return f"<@{id}>"
+
+
+def role_ping(id: int) -> str:
+    return f"<@&{id}>"

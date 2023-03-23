@@ -6,14 +6,11 @@ name = "pypi"
 [packages]
 "discord.py" = "*"
 requests = "*"
-python-dotenv = "*"
-praw = "*"
 asyncpraw = "*"
-pony = "*"
-psycopg2-binary = "*"
 
 [dev-packages]
 pytest = "*"
+python-dotenv = "*"
 
 [requires]
 python_version = "3.11"
