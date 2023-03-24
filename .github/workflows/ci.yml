@@ -5,6 +5,8 @@ name: Publish docker image to Container Registry
 on:
   # Runs on pushes targeting the default branch
   push:
+    paths:
+      - "**.py"
 
 
 env:
