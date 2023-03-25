@@ -3,13 +3,9 @@ import os
 
 import discord
 
-from RedditClient import search_manga
-from src import logger
-from utils import role_ping
-
-CHANNEL_IDS = [
-    "1082820333477838868",
-]
+from robbot.RedditClient import search_manga
+from robbot import logger
+from robbot.utils import role_ping
 
 SERIES = {
     "Chainsaw Man": {
@@ -20,8 +16,12 @@ SERIES = {
 }
 
 
-class MyBot(discord.Client):
+class Bot(discord.Client):
     def __init__(self):
+
+        self.channels_id = []
+        if (testing_channel_id := os.getenv("TESTING_CHANNEL_ID")) is not None:
+            self.channels_id.append(testing_channel_id)
 
         intents = discord.Intents.default()
         intents.messages = True
@@ -80,9 +80,9 @@ class MyBot(discord.Client):
 
     async def on_ready(self):
         logger.info('Logged on as', self.user)
-        while True:
-            await search_submissions(self)
-            await asyncio.sleep(60)
+        # while True:
+        #     await search_submissions(self)
+        #     await asyncio.sleep(60)
 
     async def on_message(self, message):
         # don't respond to ourselves
@@ -90,7 +90,9 @@ class MyBot(discord.Client):
             return
 
         if message.content == 'ping':
+            logger.debug(f"Senging '{'pong'}' to {message.channel}")
             return await message.channel.send('pong')
+            # return await send_message(message.channel, "pong")
 
     async def close(self):
         """Logs out of Discord"""
@@ -104,19 +106,23 @@ class MyBot(discord.Client):
         await self.close()
 
 
-async def search_submissions(bot: MyBot):
+async def search_submissions(bot: Bot):
     logger.debug("Searching for submissions")
     for series in SERIES:
         t = await find_new_chapters(series)
-        for channel_id in CHANNEL_IDS:
+        for channel_id in bot.channels_id:
             channel = bot.get_channel(int(channel_id))
             if t:
-                await channel.send(t)
+                await send_message(channel, t)
     # t = await find_new_chapters("chainsaw")
     # for channel_id in CHANNELS:
     #     channel = bot.get_channel(int(channel_id))
     #     await channel.send("Weeb Testing, next test in 60 seconds")
     #     await channel.send(t)
+
+async def send_message(channel: discord.channel , message: str):
+    logger.debug(f"Senging '{t}' to {channel.name}")
+    return await channel.send(message)
 
 
 async def find_new_chapters(title: str) -> str | None:

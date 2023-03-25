@@ -5,7 +5,7 @@ from typing import List
 import asyncpraw
 from asyncpraw.models import Submission
 
-from src.utils import get_chapter_number
+from robbot.utils import get_chapter_number
 
 
 class RedditClient:
