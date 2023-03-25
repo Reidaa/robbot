@@ -16,7 +16,16 @@
 			"version": "latest"
 		}
 	},
-    "postCreateCommand": "pipenv install --dev"
+	"postCreateCommand": "pipenv install --dev",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"mikestead.dotenv",
+				"GitHub.copilot",
+				"ms-python.python"
+			]
+		}
+	}
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
