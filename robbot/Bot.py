@@ -3,18 +3,18 @@ import os
 
 import discord
 
-from robbot.RedditClient import search_manga
+from robbot.types import Manga, SearchMangaResult
+from robbot.services.reddit import search_manga
 from robbot import logger
 from robbot.utils import role_ping
 
-SERIES = {
-    "Chainsaw Man": {
-        "last_chapter": 123,
-        "roles": [1087136295807099032, ],
-        "users": []
-    }
+SERIES: list[Manga] = {
+    "Chainsaw Man": Manga(
+            title="Chainsaw Man", 
+            last_chapter=123, 
+            roles_to_notify=[1087136295807099032, ],
+        ),
 }
-
 
 class Bot(discord.Client):
     def __init__(self):
@@ -55,17 +55,18 @@ class Bot(discord.Client):
             else:
                 return await interaction.response.send_message(f"Only the owner can shutdown the bot")
 
-        @self.tree.command()
-        @discord.app_commands.describe(
-            title="Title of the manga"
-        )
-        async def manga(interaction: discord.Interaction, title: str):
-            result = await search_manga(title)
+        # @self.tree.command()
+        # @discord.app_commands.describe(
+        #     title="Title of the manga"
+        # )
+        # async def manga(interaction: discord.Interaction, title: str):
+        #     response = f"Did not found the manga {interaction.user.mention}"
+        #     result: SearchMangaResult = await search_manga(title)
 
-            if result:
-                await interaction.response.send_message(f"{result['title']}: {result['link']}")
-            else:
-                await interaction.response.send_message(f"Did not found the manga {interaction.user.mention}")
+        #     if result:
+        #        response = f"Found {result.title} {result.chapter} {result.link}"
+            
+        #     return await interaction.response.send_message(response)
 
     async def setup_hook(self):
         if (testing_guild_id := os.getenv("TESTING_GUILD_ID")) is not None:
@@ -124,16 +125,19 @@ async def send_message(channel: discord.channel , message: str):
     logger.debug(f"Senging '{t}' to {channel.name}")
     return await channel.send(message)
 
-
 async def find_new_chapters(title: str) -> str | None:
-    result = await search_manga(title)
+    result: SearchMangaResult = await search_manga(title)
 
     if result:
-        if result['chapter'] > SERIES[title]['last_chapter']:
-            logger.debug(f"Found new chapter for: {title}")
-            response = f"{title} {result['chapter']}: {result['link']} {role_ping(SERIES[title]['roles'][0])}"
+        if result.chapter > SERIES[title].last_chapter:
+            if result.link:
+                logger.debug(f"Found new chapter for: {title} (last chapter: {SERIES[title].last_chapter})")
+                response = f"{title} {result.chapter}: {result['link']} {role_ping(SERIES[title].roles[0])}"
+            else:
+                logger.debug("Found new chapter but no link were provided")
+                response = f"A new chapter for {title} was found but no link were provided"
         else:
-            logger.debug(f"No new chapters for: {title} (last chapter: {SERIES[title]['last_chapter']})")
+            logger.debug(f"No new chapters for: {title} (last chapter: {SERIES[title].last_chapter})")
             response = None
     else:
         logger.debug(f"Did not found: {title}")
