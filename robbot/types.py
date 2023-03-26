@@ -2,7 +2,7 @@ from typing import Optional
 from dataclasses import dataclass, field
 
 
-@dataclass(frozen=True)
+@dataclass
 class Manga:
     title: str
     last_chapter: int
@@ -14,4 +14,4 @@ class Manga:
 class SearchMangaResult:
     title: str
     chapter: int
-    link: Optional[str] = None
+    link: Optional[str] = field(default=None)

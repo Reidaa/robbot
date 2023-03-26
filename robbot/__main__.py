@@ -23,18 +23,6 @@ def main():
         async with bot:
             await bot.start(token=discord_bot_token, reconnect=True)
 
-    # log_handler: Optional[logging.Handler] = MISSING
-    # log_formatter: Optional[logging.Formatter] = MISSING
-    # log_level: int = MISSING
-    # root_logger: bool = False
-    # if log_handler is not None:
-    #     utils.setup_logging(
-    #         handler=log_handler,
-    #         formatter=log_formatter,
-    #         level=log_level,
-    #         root=root_logger,
-    #     )
-
     try:
         asyncio.run(runner())
     except discord.errors.LoginFailure as e:

@@ -1,5 +1,7 @@
 import asyncio
 import os
+from typing import Optional
+import logging
 
 import discord
 
@@ -11,17 +13,19 @@ from robbot.utils import role_ping
 SERIES: list[Manga] = {
     "Chainsaw Man": Manga(
             title="Chainsaw Man", 
-            last_chapter=123, 
+            last_chapter=123-1, 
             roles_to_notify=[1087136295807099032, ],
+        ),
+    "My hero academia": Manga(
+            title="My hero academia",
+            last_chapter=382-1,
+            roles_to_notify=[1087136295807099032, ],
+            users_to_notify=[209770215163035658, ],
         ),
 }
 
 class Bot(discord.Client):
     def __init__(self):
-
-        self.channels_id = []
-        if (testing_channel_id := os.getenv("TESTING_CHANNEL_ID")) is not None:
-            self.channels_id.append(testing_channel_id)
 
         intents = discord.Intents.default()
         intents.messages = True
@@ -29,7 +33,14 @@ class Bot(discord.Client):
         intents.members = True
 
         super().__init__(intents=intents)
+        
+        self.channels_id = []
+        if (testing_channel_id := os.getenv("TESTING_CHANNEL_ID")) is not None:
+            self.channels_id.append(testing_channel_id)
+
+
         self.tree: discord.app_commands.CommandTree | None = None
+        self.channels: list[discord.channel] = []
 
         self.register_cmds()
 
@@ -55,18 +66,18 @@ class Bot(discord.Client):
             else:
                 return await interaction.response.send_message(f"Only the owner can shutdown the bot")
 
-        # @self.tree.command()
-        # @discord.app_commands.describe(
-        #     title="Title of the manga"
-        # )
-        # async def manga(interaction: discord.Interaction, title: str):
-        #     response = f"Did not found the manga {interaction.user.mention}"
-        #     result: SearchMangaResult = await search_manga(title)
+        @self.tree.command()
+        @discord.app_commands.describe(
+            title="Title of the manga"
+        )
+        async def manga(interaction: discord.Interaction, title: str):
+            response = f"Did not found the manga {interaction.user.mention}"
+            result: SearchMangaResult = await search_manga(title)
 
-        #     if result:
-        #        response = f"Found {result.title} {result.chapter} {result.link}"
+            if result:
+               response = f"Found {result.title} {result.chapter} {result.link}"
             
-        #     return await interaction.response.send_message(response)
+            return await interaction.response.send_message(response)
 
     async def setup_hook(self):
         if (testing_guild_id := os.getenv("TESTING_GUILD_ID")) is not None:
@@ -79,11 +90,20 @@ class Bot(discord.Client):
             self.tree.copy_global_to(guild=testing_guild)
             await self.tree.sync(guild=testing_guild)
 
+    async def start(self, token: str, *, reconnect: bool = True) -> None:
+        discord.utils.setup_logging(level=logging.INFO)
+        return await super().start(token)
+
     async def on_ready(self):
         logger.info('Logged on as', self.user)
-        # while True:
-        #     await search_submissions(self)
-        #     await asyncio.sleep(60)
+        
+        for channel_id in self.channels_id:
+            self.channels.append(self.get_channel(int(channel_id)))
+        
+        while True:
+            message = await new_release(self)
+            logger.info("waking up in 60")
+            await asyncio.sleep(60)
 
     async def on_message(self, message):
         # don't respond to ourselves
@@ -93,7 +113,6 @@ class Bot(discord.Client):
         if message.content == 'ping':
             logger.debug(f"Senging '{'pong'}' to {message.channel}")
             return await message.channel.send('pong')
-            # return await send_message(message.channel, "pong")
 
     async def close(self):
         """Logs out of Discord"""
@@ -107,41 +126,34 @@ class Bot(discord.Client):
         await self.close()
 
 
-async def search_submissions(bot: Bot):
+async def new_release(bot: Bot):
     logger.debug("Searching for submissions")
-    for series in SERIES:
-        t = await find_new_chapters(series)
-        for channel_id in bot.channels_id:
-            channel = bot.get_channel(int(channel_id))
-            if t:
-                await send_message(channel, t)
-    # t = await find_new_chapters("chainsaw")
-    # for channel_id in CHANNELS:
-    #     channel = bot.get_channel(int(channel_id))
-    #     await channel.send("Weeb Testing, next test in 60 seconds")
-    #     await channel.send(t)
+    
+    for key in SERIES:
+        response = await find_new_release(key)
+        if response:
+            for channel in bot.channels:
+                logger.debug(f"Sending |{response}| to channel |{channel.name}|")
+                await channel.send(response)
+            SERIES[key].last_chapter += 1
 
-async def send_message(channel: discord.channel , message: str):
-    logger.debug(f"Senging '{t}' to {channel.name}")
-    return await channel.send(message)
+    return
 
-async def find_new_chapters(title: str) -> str | None:
+async def find_new_release(title: str) -> Optional[str]:
+    response: Optional[str] = None
     result: SearchMangaResult = await search_manga(title)
 
     if result:
         if result.chapter > SERIES[title].last_chapter:
             if result.link:
                 logger.debug(f"Found new chapter for: {title} (last chapter: {SERIES[title].last_chapter})")
-                response = f"{title} {result.chapter}: {result['link']} {role_ping(SERIES[title].roles[0])}"
+                response = f"{title} {result.chapter}: {result.link}"
             else:
                 logger.debug("Found new chapter but no link were provided")
                 response = f"A new chapter for {title} was found but no link were provided"
         else:
             logger.debug(f"No new chapters for: {title} (last chapter: {SERIES[title].last_chapter})")
-            response = None
     else:
         logger.debug(f"Did not found: {title}")
-        response = None
 
-    logger.debug(f"response is: {response}")
     return response

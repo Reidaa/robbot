@@ -23,7 +23,8 @@ def test_get_chapter_number_abbreviated():
     assert get_chapter_number("[DISC] Mob kara Hajimaru Tansaku Eiyuutan - Ch. 4") == 4
 
 
-
+def test_get_chapter_number_abbreviated_parenthesis():
+    assert get_chapter_number("[DISC] Vinland Saga (Ch. 200)") == 200
 
 def test_get_chapter_number_6():
     assert get_chapter_number("[DISC] Usogui - Chapter 4") == 4
