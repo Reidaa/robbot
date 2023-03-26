@@ -20,7 +20,6 @@
 	"customizations": {
 		"vscode": {
 			"extensions": [
-				"mikestead.dotenv",
 				"GitHub.copilot",
 				"ms-python.python"
 			]
