@@ -22,6 +22,18 @@ SERIES: list[Manga] = {
             roles_to_notify=[1087136295807099032, ],
             users_to_notify=[209770215163035658, ],
         ),
+    "blue box": Manga(
+            title="blue box",
+            last_chapter=92,
+            roles_to_notify=[],
+            users_to_notify=[],
+    ),
+    "akane banashi": Manga(
+            title="akane banashi",
+            last_chapter=53,
+            roles_to_notify=[],
+            users_to_notify=[],
+    ),
 }
 
 class Bot(discord.Client):
