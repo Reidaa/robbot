@@ -7,34 +7,10 @@ import discord
 
 from robbot.types import Manga, SearchMangaResult
 from robbot.services.reddit import search_manga
+from robbot.services.db import get_mangas, update_chapter, get_manga
 from robbot import logger
 from robbot.utils import role_ping
 
-SERIES: list[Manga] = {
-    "Chainsaw Man": Manga(
-            title="Chainsaw Man", 
-            last_chapter=123-1, 
-            roles_to_notify=[1087136295807099032, ],
-        ),
-    "My hero academia": Manga(
-            title="My hero academia",
-            last_chapter=382-1,
-            roles_to_notify=[1087136295807099032, ],
-            users_to_notify=[209770215163035658, ],
-        ),
-    "blue box": Manga(
-            title="blue box",
-            last_chapter=92,
-            roles_to_notify=[],
-            users_to_notify=[],
-    ),
-    "akane banashi": Manga(
-            title="akane banashi",
-            last_chapter=53,
-            roles_to_notify=[],
-            users_to_notify=[],
-    ),
-}
 
 class Bot(discord.Client):
     def __init__(self):
@@ -76,7 +52,7 @@ class Bot(discord.Client):
                 await interaction.response.send_message(f"Shutting down...")
                 await self.shutdown()
             else:
-                return await interaction.response.send_message(f"Only the owner can shutdown the bot")
+                return await interaction.response.send_message(f"t ki?")
 
         @self.tree.command()
         @discord.app_commands.describe(
@@ -137,35 +113,42 @@ class Bot(discord.Client):
         """
         await self.close()
 
+    async def spread(message: str):
+        for channel in self.channels:
+            logger.debug(f"Sending |{response}| to channel |{channel.name}|")
+            await channel.send(message)
+
 
 async def new_release(bot: Bot):
     logger.debug("Searching for submissions")
     
-    for key in SERIES:
-        response = await find_new_release(key)
+    with DBContext() as db:
+        mangas = db.get_mangas()
+    
+    for key in mangas:
+        response = await find_new_release(mangas[key])
         if response:
-            for channel in bot.channels:
-                logger.debug(f"Sending |{response}| to channel |{channel.name}|")
-                await channel.send(response)
-            SERIES[key].last_chapter += 1
+            bot.spread(response)
+            with DBContext() as db:
+                db.update_chapter(title=key, chapter=manga[key].last_chapter + 1)
 
     return
 
-async def find_new_release(title: str) -> Optional[str]:
+async def find_new_release(manga: Manga) -> Optional[str]:
     response: Optional[str] = None
-    result: SearchMangaResult = await search_manga(title)
+    result: SearchMangaResult = await search_manga(manga.title)
 
     if result:
-        if result.chapter > SERIES[title].last_chapter:
+        if result.chapter > manga.last_chapter:
             if result.link:
-                logger.debug(f"Found new chapter for: {title} (last chapter: {SERIES[title].last_chapter})")
-                response = f"{title} {result.chapter}: {result.link}"
+                logger.debug(f"Found new chapter for: {manga.title} (last chapter: {manga.last_chapter})")
+                response = f"{manga.title} {result.chapter}: {result.link}"
             else:
                 logger.debug("Found new chapter but no link were provided")
-                response = f"A new chapter for {title} was found but no link were provided"
+                response = f"A new chapter for {manga.title} was found but no link were provided"
         else:
-            logger.debug(f"No new chapters for: {title} (last chapter: {SERIES[title].last_chapter})")
+            logger.debug(f"No new chapters for: {manga.title} (last chapter: {manga.last_chapter})")
     else:
-        logger.debug(f"Did not found: {title}")
+        logger.debug(f"Did not found: {manga.title}")
 
     return response
