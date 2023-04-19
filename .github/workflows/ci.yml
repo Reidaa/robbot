@@ -17,6 +17,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   APP_NAME: robbot
+  CONTAINER: podman
 
 jobs:
   test:
@@ -107,10 +108,10 @@ jobs:
 
       - name: SSH into the server and pull the image and run it
         run: |
-          ssh $SSH_USER@$SSH_HOST "docker pull $IMAGE_TAG"
-          ssh $SSH_USER@$SSH_HOST "docker container stop $APP_NAME || true"
-          ssh $SSH_USER@$SSH_HOST "docker container rm -f $APP_NAME"
-          ssh $SSH_USER@$SSH_HOST "docker run --env REDDIT_ID=$REDDIT_ID --env REDDIT_SECRET=$REDDIT_SECRET --env REDDIT_AGENT=$REDDIT_AGENT --env DISCORD_TOKEN=$DISCORD_TOKEN --env TESTING_GUILD_ID=$TESTING_GUILD_ID --env TESTING_CHANNEL_ID=$TESTING_CHANNEL_ID --name $APP_NAME -d --restart unless-stopped $IMAGE_TAG"
+          ssh $SSH_USER@$SSH_HOST "$CONTAINER pull $IMAGE_TAG"
+          ssh $SSH_USER@$SSH_HOST "$CONTAINER container stop $APP_NAME || true"
+          ssh $SSH_USER@$SSH_HOST "$CONTAINER container rm -f $APP_NAME"
+          ssh $SSH_USER@$SSH_HOST "$CONTAINER run --env REDDIT_ID=$REDDIT_ID --env REDDIT_SECRET=$REDDIT_SECRET --env REDDIT_AGENT=$REDDIT_AGENT --env DISCORD_TOKEN=$DISCORD_TOKEN --env TESTING_GUILD_ID=$TESTING_GUILD_ID --env TESTING_CHANNEL_ID=$TESTING_CHANNEL_ID --name $APP_NAME -d --restart unless-stopped $IMAGE_TAG"
         env:
           IMAGE_TAG: ${{ steps.meta.outputs.tags }}
           APP_NAME: ${{ env.APP_NAME }}
