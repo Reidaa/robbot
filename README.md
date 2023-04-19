@@ -2,4 +2,6 @@
 
 ## TODO
 
-* Gracefull exit when SIGTERM
+* Gracefully exit when SIGTERM
+* Add Prisma
+* Proper asyncio handling when using Reddit API

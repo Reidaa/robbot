@@ -4,37 +4,50 @@ from typing import Optional
 import logging
 
 import discord
+from discord.ext import tasks
 
-from robbot.types import Manga, SearchMangaResult
+from robbot.t import Manga, SearchMangaResult
 from robbot.services.reddit import search_manga
 from robbot import logger
-from robbot.utils import role_ping
 
-SERIES: list[Manga] = {
+SERIES = {
     "Chainsaw Man": Manga(
-            title="Chainsaw Man", 
-            last_chapter=123-1, 
-            roles_to_notify=[1087136295807099032, ],
-        ),
-    "My hero academia": Manga(
-            title="My hero academia",
-            last_chapter=382-1,
-            roles_to_notify=[1087136295807099032, ],
-            users_to_notify=[209770215163035658, ],
-        ),
-    "blue box": Manga(
-            title="blue box",
-            last_chapter=92,
-            roles_to_notify=[],
-            users_to_notify=[],
+        title="Chainsaw Man",
+        last_chapter=-1,
+        roles_to_notify=[1087136295807099032, ],
     ),
-    "akane banashi": Manga(
-            title="akane banashi",
-            last_chapter=53,
-            roles_to_notify=[],
-            users_to_notify=[],
+    "My hero academia": Manga(
+        title="My hero academia",
+        last_chapter=-1,
+        roles_to_notify=[1087136295807099032, ],
+        users_to_notify=[209770215163035658, ],
+    ),
+    "jujutsu kaisen": Manga(
+        title="jujutsu kaisen",
+        last_chapter=-1,
+        roles_to_notify=[],
+        users_to_notify=[],
+    ),
+    "yumeochi": Manga(
+        title="yumeochi",
+        last_chapter=-1,
+        roles_to_notify=[],
+        users_to_notify=[],
+    ),
+    "dandadan": Manga(
+        title="dandadan",
+        last_chapter=-1,
+        roles_to_notify=[],
+        users_to_notify=[],
+    ),
+    "I Want to Be Praised by a Gal Gamer!": Manga(
+        title="I Want to Be Praised by a Gal Gamer!",
+        last_chapter=-1,
+        roles_to_notify=[],
+        users_to_notify=[],
     ),
 }
+
 
 class Bot(discord.Client):
     def __init__(self):
@@ -45,11 +58,10 @@ class Bot(discord.Client):
         intents.members = True
 
         super().__init__(intents=intents)
-        
+
         self.channels_id = []
         if (testing_channel_id := os.getenv("TESTING_CHANNEL_ID")) is not None:
             self.channels_id.append(testing_channel_id)
-
 
         self.tree: discord.app_commands.CommandTree | None = None
         self.channels: list[discord.channel] = []
@@ -87,8 +99,8 @@ class Bot(discord.Client):
             result: SearchMangaResult = await search_manga(title)
 
             if result:
-               response = f"Found {result.title} {result.chapter} {result.link}"
-            
+                response = f"Found {result.title} {result.chapter} {result.link}"
+
             return await interaction.response.send_message(response)
 
     async def setup_hook(self):
@@ -108,14 +120,13 @@ class Bot(discord.Client):
 
     async def on_ready(self):
         logger.info('Logged on as', self.user)
-        
+        await update_last_chapter()
+
         for channel_id in self.channels_id:
             self.channels.append(self.get_channel(int(channel_id)))
-        
-        while True:
-            message = await new_release(self)
-            logger.info("waking up in 60")
-            await asyncio.sleep(60)
+
+        self.notify_new_releases.start()
+
 
     async def on_message(self, message):
         # don't respond to ourselves
@@ -128,6 +139,7 @@ class Bot(discord.Client):
 
     async def close(self):
         """Logs out of Discord"""
+        self.notify_new_releases.cancel()
         await super().close()
         logger.info("Closed")
 
@@ -137,19 +149,23 @@ class Bot(discord.Client):
         """
         await self.close()
 
+    @tasks.loop(seconds=60)
+    async def notify_new_releases(self):
+        logger.debug("Searching for submissions")
 
-async def new_release(bot: Bot):
-    logger.debug("Searching for submissions")
-    
-    for key in SERIES:
-        response = await find_new_release(key)
-        if response:
-            for channel in bot.channels:
-                logger.debug(f"Sending |{response}| to channel |{channel.name}|")
-                await channel.send(response)
-            SERIES[key].last_chapter += 1
+        for key in SERIES:
+            response = await find_new_release(key)
+            if response:
+                for channel in self.channels:
+                    logger.debug(f"Sending |{response}| to channel |{channel.name}|")
+                    await channel.send(response)
+                SERIES[key].last_chapter += 1
 
-    return
+        logger.debug("Finished searching for submissions")
+        return
+
+
+
 
 async def find_new_release(title: str) -> Optional[str]:
     response: Optional[str] = None
@@ -169,3 +185,11 @@ async def find_new_release(title: str) -> Optional[str]:
         logger.debug(f"Did not found: {title}")
 
     return response
+
+
+async def update_last_chapter():
+    for key in SERIES:
+        if SERIES[key].last_chapter == -1:
+            result: SearchMangaResult = await search_manga(key)
+            if result:
+                SERIES[key].last_chapter = result.chapter - 1
