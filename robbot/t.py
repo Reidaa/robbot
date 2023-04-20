@@ -9,6 +9,11 @@ class Manga:
     roles_to_notify: list[int] = field(default_factory=list)
     users_to_notify: list[int] = field(default_factory=list)
 
+@dataclass(frozen=True)
+class MangaChapter:
+    title: str
+    number: int
+    link: Optional[str] = field(default=None)
 
 @dataclass(frozen=True)
 class SearchMangaResult:

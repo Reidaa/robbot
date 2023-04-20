@@ -6,7 +6,7 @@ import logging
 import discord
 from discord.ext import tasks
 
-from robbot.t import Manga, SearchMangaResult
+from robbot.t import Manga, SearchMangaResult, MangaChapter
 from robbot.services.reddit import search_manga
 from robbot import logger
 
@@ -103,6 +103,13 @@ class Bot(discord.Client):
 
             return await interaction.response.send_message(response)
 
+        @self.tree.command()
+        async def reset(interaction: discord.Interaction):
+            for manga in SERIES.values():
+                manga.last_chapter = -1
+            return await interaction.response.send_message(f"Reset")
+
+
     async def setup_hook(self):
         if (testing_guild_id := os.getenv("TESTING_GUILD_ID")) is not None:
             logger.debug("Syncing commands with testing guild")
@@ -127,7 +134,6 @@ class Bot(discord.Client):
 
         self.notify_new_releases.start()
 
-
     async def on_message(self, message):
         # don't respond to ourselves
         if message.author == self.user:
@@ -144,7 +150,8 @@ class Bot(discord.Client):
         logger.info("Closed")
 
     async def shutdown(self):
-        """ Gracefully kill the Bot.
+        """
+        Gracefully kill the Bot.
         To be called from commands
         """
         await self.close()
@@ -154,38 +161,58 @@ class Bot(discord.Client):
         logger.debug("Searching for submissions")
 
         for key in SERIES:
-            response = await find_new_release(key)
-            if response:
+            chapter = await get_latest_chapter_info(title=key)
+            if chapter:
+                response = format_response(chapter)
                 for channel in self.channels:
                     logger.debug(f"Sending |{response}| to channel |{channel.name}|")
                     await channel.send(response)
-                SERIES[key].last_chapter += 1
+                SERIES[key].last_chapter = chapter.number
 
-        logger.debug("Finished searching for submissions")
-        return
-
+        logger.info("Finished searching for submissions")
 
 
 
-async def find_new_release(title: str) -> Optional[str]:
-    response: Optional[str] = None
-    result: SearchMangaResult = await search_manga(title)
 
-    if result:
-        if result.chapter > SERIES[title].last_chapter:
-            if result.link:
-                logger.debug(f"Found new chapter for: {title} (last chapter: {SERIES[title].last_chapter})")
-                response = f"{title} {result.chapter}: {result.link}"
-            else:
-                logger.debug("Found new chapter but no link were provided")
-                response = f"A new chapter for {title} was found but no link were provided"
-        else:
-            logger.debug(f"No new chapters for: {title} (last chapter: {SERIES[title].last_chapter})")
-    else:
+async def get_latest_chapter_info(title: str) -> MangaChapter | None:
+    try:
+        manga = get_series(title)
+    except KeyError:
         logger.debug(f"Did not found: {title}")
+        return None
 
-    return response
+    try:
+        result = await search_manga(title)
+    except Exception as e:
+        logger.error(f"Error while searching for {title}: {e}")
+        return None
 
+    if not result:
+        logger.debug(f"Did not found: {title}")
+        return None
+
+    if result.chapter <= manga.last_chapter:
+        logger.debug(f"No new chapters for: {title} (last chapter: {manga.last_chapter})")
+        return None
+
+    if not result.link:
+        logger.debug("Found new chapter but no link were provided")
+        return MangaChapter(title=title, number=result.chapter, link=None)
+
+    logger.debug(f"Found new chapter for: {title} (last chapter: {manga.last_chapter})")
+    return MangaChapter(title=title, number=result.chapter, link=result.link)
+
+
+def get_series(title: str) -> Manga:
+    m = SERIES.get(title)
+    return m
+
+
+def format_response(chapter: MangaChapter) -> str:
+    if chapter.link:
+        return f"{chapter.title} {chapter.number}: {chapter.link}"
+    else:
+        return f"A new chapter for {chapter.title} was found but no link were provided"
 
 async def update_last_chapter():
     for key in SERIES:
