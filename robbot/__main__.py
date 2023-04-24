@@ -14,26 +14,28 @@ from robbot.Bot import Bot
 from robbot.utils import dotenv_check
 
 
-def main():
-    dotenv_check()
-    discord_bot_token = os.getenv("DISCORD_TOKEN")
-    bot = Bot()
+class Main:
+    def __init__(self):
+        dotenv_check()
+        self.bot = Bot()
+        self.discord_bot_token = os.getenv("DISCORD_TOKEN")
 
-    async def runner():
-        async with bot:
-            await bot.start(token=discord_bot_token, reconnect=True)
+    async def _runner(self):
+        async with self.bot:
+            await self.bot.start(token=self.discord_bot_token, reconnect=True)
 
-    try:
-        asyncio.run(runner())
-    except discord.errors.LoginFailure as e:
-        logger.error(e)
-        return 1
-    except KeyboardInterrupt:
-        logger.info("KeyboardInterrupt received, exiting...")
-        return 0
+    def run(self):
+        try:
+            asyncio.run(self._runner())
+        except discord.errors.LoginFailure as e:
+            logger.error(e)
+            return 1
+        except KeyboardInterrupt:
+            logger.info("KeyboardInterrupt received, exiting...")
+            return 0
 
 
 if __name__ == "__main__":
     import sys
 
-    sys.exit(main())
+    sys.exit(Main().run())
