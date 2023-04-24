@@ -1,7 +1,7 @@
-import os
 from pathlib import Path
-from robbot.logger import debug, error
 from typing import Optional
+
+from robbot.logger import debug, error
 
 
 def get_chapter_number(chapter_title) -> Optional[int]:
@@ -16,11 +16,11 @@ def get_chapter_number(chapter_title) -> Optional[int]:
     else:
         return None
 
-def user_ping(id: int) -> str:
+def format_user_ping(id: int) -> str:
     return f"<@{id}>"
 
 
-def role_ping(id: int) -> str:
+def format_role_ping(id: int) -> str:
     return f"<@&{id}>"
 
 def dotenv_check():

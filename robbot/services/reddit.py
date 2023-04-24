@@ -4,9 +4,9 @@ from typing import Optional
 from asyncpraw import Reddit
 from asyncpraw.models import Submission
 
-from robbot.utils import get_chapter_number
-from robbot.t import SearchMangaResult
 from robbot import logger
+from robbot.t import SearchMangaResult
+from robbot.utils import get_chapter_number
 
 
 async def search_subreddit(subreddit: str, query: str, sort: str = "relevance", limit: int = 100) -> list[Submission]:
@@ -45,16 +45,17 @@ async def search_manga(query: str) -> Optional[SearchMangaResult]:
         last_chapter = max(chapters)
         idx: int = chapters.index(last_chapter)
 
-        if filtered[idx].title.startswith("[DISC]"):
-            logger.debug("found something")
+        if filtered[idx].title.lower().startswith("[disc]"):
             ret = SearchMangaResult(
                 title=filtered[idx].title[7:],
                 chapter=last_chapter,
                 link=filtered[idx].url
             )
         else:
-            logger.debug("found nothing")
+            pass
     else:
         pass
-        
+
     return ret
+
+# async def search_anime(query: str)
