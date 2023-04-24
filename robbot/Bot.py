@@ -10,6 +10,7 @@ from robbot.services.reddit import search_manga
 from robbot.t import SearchMangaResult, MangaChapter
 
 
+
 class Bot(discord.Client):
     def __init__(self):
         self.tree: discord.app_commands.CommandTree | None = None
@@ -43,7 +44,7 @@ class Bot(discord.Client):
                 await interaction.response.send_message(f"Shutting down...")
                 await self.shutdown()
             else:
-                return await interaction.response.send_message(f"Only the owner can shutdown the bot")
+                return await interaction.response.send_message(f"t ki?")
 
         @self.tree.command()
         @discord.app_commands.describe(
@@ -149,5 +150,6 @@ async def update_last_chapter():
             result: SearchMangaResult = await search_manga(manga.title)
             if result:
                 DB.update_manga_chapter(manga.title, result.chapter)
+
 
     logger.info("Finished updating last chapters")
