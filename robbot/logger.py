@@ -17,15 +17,19 @@ class Logger:
 
 
 def error(*value: object):
-    Logger.stderr("[ERROR]", *value)
+    Logger.stderr("[ERROR\t]", *value)
+
+
+def warning(*value: object):
+    Logger.stderr("[WARNING\t]", *value)
 
 
 def info(*value: object):
-    Logger.stdout("[INFO]", *value)
+    Logger.stdout("[INFO\t]", *value)
 
 
 def debug(*value: object):
-    Logger.stdout("[DEBUG]", *value)
+    Logger.stdout("[DEBUG\t]", *value)
 
 
 def pretty(*value: object):

@@ -1,19 +1,19 @@
-import asyncio
-import os
-from typing import Optional
 import logging
+import os
 
 import discord
+from discord.ext import tasks
 
-from robbot.types import Manga, SearchMangaResult
-from robbot.services.reddit import search_manga
-from robbot.services.db import get_mangas, update_chapter, get_manga
 from robbot import logger
-from robbot.utils import role_ping
+from robbot.orm.ponydb import DB
+from robbot.services.reddit import search_manga
+from robbot.t import SearchMangaResult, MangaChapter
+
 
 
 class Bot(discord.Client):
     def __init__(self):
+        self.tree: discord.app_commands.CommandTree | None = None
 
         intents = discord.Intents.default()
         intents.messages = True
@@ -21,14 +21,6 @@ class Bot(discord.Client):
         intents.members = True
 
         super().__init__(intents=intents)
-        
-        self.channels_id = []
-        if (testing_channel_id := os.getenv("TESTING_CHANNEL_ID")) is not None:
-            self.channels_id.append(testing_channel_id)
-
-
-        self.tree: discord.app_commands.CommandTree | None = None
-        self.channels: list[discord.channel] = []
 
         self.register_cmds()
 
@@ -58,13 +50,13 @@ class Bot(discord.Client):
         @discord.app_commands.describe(
             title="Title of the manga"
         )
-        async def manga(interaction: discord.Interaction, title: str):
+        async def search(interaction: discord.Interaction, title: str):
             response = f"Did not found the manga {interaction.user.mention}"
             result: SearchMangaResult = await search_manga(title)
 
             if result:
-               response = f"Found {result.title} {result.chapter} {result.link}"
-            
+                response = f"Found {result.title} {result.chapter} {result.link}"
+
             return await interaction.response.send_message(response)
 
     async def setup_hook(self):
@@ -84,71 +76,80 @@ class Bot(discord.Client):
 
     async def on_ready(self):
         logger.info('Logged on as', self.user)
-        
-        for channel_id in self.channels_id:
-            self.channels.append(self.get_channel(int(channel_id)))
-        
-        while True:
-            message = await new_release(self)
-            logger.info("waking up in 60")
-            await asyncio.sleep(60)
-
-    async def on_message(self, message):
-        # don't respond to ourselves
-        if message.author == self.user:
-            return
-
-        if message.content == 'ping':
-            logger.debug(f"Senging '{'pong'}' to {message.channel}")
-            return await message.channel.send('pong')
+        await update_last_chapter()
+        self.notify_new_releases.start()
 
     async def close(self):
         """Logs out of Discord"""
+        self.notify_new_releases.cancel()
         await super().close()
         logger.info("Closed")
 
     async def shutdown(self):
-        """ Gracefully kill the Bot.
+        """
+        Gracefully kill the Bot.
         To be called from commands
         """
         await self.close()
 
-    async def spread(message: str):
-        for channel in self.channels:
-            logger.debug(f"Sending |{response}| to channel |{channel.name}|")
-            await channel.send(message)
+    @tasks.loop(seconds=5 * 60)
+    async def notify_new_releases(self):
+        logger.debug("Searching for releases...")
+
+        for channel_id in DB.get_channels_ids():
+            channel = self.get_channel(int(channel_id))
+            if not channel:
+                logger.warning(f"channel {int(channel_id)} not found")
+                continue
+            releases = []
+            for manga in DB.get_mangas_from_channel(channel_id):
+                res = await get_new_chapter_info(manga.title)
+                if res:
+                    releases.append(format_response(res))
+            for release in releases:
+                await channel.send(release)
+
+        logger.info("Finished searching for releases")
 
 
-async def new_release(bot: Bot):
-    logger.debug("Searching for submissions")
-    
-    with DBContext() as db:
-        mangas = db.get_mangas()
-    
-    for key in mangas:
-        response = await find_new_release(mangas[key])
-        if response:
-            bot.spread(response)
-            with DBContext() as db:
-                db.update_chapter(title=key, chapter=manga[key].last_chapter + 1)
+async def get_new_chapter_info(title: str) -> MangaChapter | None:
+    try:
+        manga = DB.get_manga_from_title(title)
+        result = await search_manga(title)
+    except Exception as e:
+        logger.error(f"Error while searching for {title}: {e}")
+        logger.debug(f"Did not found: {title}")
+        return None
 
-    return
+    if not result:
+        logger.debug(f"Did not found: {title}")
+        return None
 
-async def find_new_release(manga: Manga) -> Optional[str]:
-    response: Optional[str] = None
-    result: SearchMangaResult = await search_manga(manga.title)
+    if result.chapter <= manga.last_chapter:
+        logger.debug(f"No new chapters for: {title} (last chapter: {manga.last_chapter})")
+        return None
 
-    if result:
-        if result.chapter > manga.last_chapter:
-            if result.link:
-                logger.debug(f"Found new chapter for: {manga.title} (last chapter: {manga.last_chapter})")
-                response = f"{manga.title} {result.chapter}: {result.link}"
-            else:
-                logger.debug("Found new chapter but no link were provided")
-                response = f"A new chapter for {manga.title} was found but no link were provided"
-        else:
-            logger.debug(f"No new chapters for: {manga.title} (last chapter: {manga.last_chapter})")
+    if not result.link:
+        logger.debug("Found new chapter but no link were provided")
+        return MangaChapter(title=title, number=result.chapter, link=None)
+
+    logger.debug(f"Found new chapter for: {title} (last chapter: {manga.last_chapter})")
+    return MangaChapter(title=title, number=result.chapter, link=result.link)
+
+
+def format_response(chapter: MangaChapter) -> str:
+    if chapter.link:
+        return f"{chapter.title} {chapter.number}: {chapter.link}"
     else:
-        logger.debug(f"Did not found: {manga.title}")
+        return f"A new chapter for {chapter.title} was found but no link were provided"
 
-    return response
+
+async def update_last_chapter():
+    for manga in DB.get_mangas():
+        if manga.last_chapter == -1:
+            result: SearchMangaResult = await search_manga(manga.title)
+            if result:
+                DB.update_manga_chapter(manga.title, result.chapter)
+
+
+    logger.info("Finished updating last chapters")

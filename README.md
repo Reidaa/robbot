@@ -2,4 +2,5 @@
 
 ## TODO
 
-* Gracefull exit when SIGTERM
+* Gracefully exit when SIGTERM
+* Add Prisma
