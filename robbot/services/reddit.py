@@ -24,7 +24,7 @@ async def search_subreddit(subreddit: str, query: str, sort: str = "relevance", 
         return submissions
     
 
-async def search_manga(query: str) -> Optional[SearchMangaResult]:
+async def search_manga(query: str) -> SearchMangaResult | None:
     logger.debug(f"searching |{query}| on r/manga")
     ret: Optional[SearchMangaResult] = None
     chapters: list[int] = []

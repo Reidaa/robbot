@@ -1,4 +1,3 @@
-import os
 from uuid import UUID
 
 from pony.orm import Database, Required, Set, PrimaryKey, db_session
@@ -37,10 +36,11 @@ class DB:
 
     @staticmethod
     @db_session
-    def get_mangas_from_channel(channel_id: UUID) -> list[Manga]:
+    def get_mangas_from_channel(channel_id: UUID | int) -> list[Manga]:
+        channel = DBChannel.get(channel_id=channel_id)
         res = [
             Manga(title=manga.title, last_chapter=manga.last_chapter)
-            for manga in DBChannel.get(channel_id=channel_id).mangas.select()
+            for manga in channel.mangas.select()
         ]
         return res
 
@@ -75,6 +75,25 @@ class DB:
 
     @staticmethod
     @db_session
+    def add_channel(channel_id: UUID | int) -> bool:
+        try:
+            DBChannel(channel_id=channel_id)
+        except Exception as e:
+            return False
+        return True
+
+    @staticmethod
+    @db_session
+    def add_manga_to_channel(channel_id: UUID | int, title: str, chapter: int = -1) -> bool:
+        try:
+            new_manga = DBManga(title=title, last_chapter=chapter)
+            DBChannel.get(channel_id=channel_id).mangas.add(new_manga)
+        except Exception as e:
+            return False
+        return True
+
+    @staticmethod
+    @db_session
     def seed():
         chainsaw = DBManga(title="chainsaw man", )
         mha = DBManga(title="my hero academia", )
@@ -83,11 +102,10 @@ class DB:
         dandadan = DBManga(title="dandadan", )
         gal = DBManga(title="I Want to Be Praised by a Gal Gamer!", )
 
-        if (testing_channel_id := os.getenv("TESTING_CHANNEL_ID")) is not None:
-            test_channel = DBChannel(
-                channel_id=testing_channel_id,
-                mangas=[chainsaw, mha, yumeochi, dandadan, gal]
-            )
+        test_channel = DBChannel(
+            channel_id=1082820333477838868,
+            mangas=[chainsaw, mha, yumeochi, dandadan, gal]
+        )
 
         # Has no access to
         test_channel2 = DBChannel(

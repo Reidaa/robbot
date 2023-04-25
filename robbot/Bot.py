@@ -7,8 +7,8 @@ from discord.ext import tasks
 from robbot import logger
 from robbot.db.ponydb import DB
 from robbot.services.reddit import search_manga
-from robbot.t import SearchMangaResult
-from robbot.utils import update_last_chapter, format_response, get_new_chapter_info
+from robbot.t import SearchMangaResult, MangaChapter
+from robbot.utils import format_response
 
 
 class Bot(discord.Client):
@@ -39,14 +39,6 @@ class Bot(discord.Client):
             await interaction.response.send_message(f"pong {interaction.user.mention}")
 
         @self.tree.command()
-        async def shutdown(interaction: discord.Interaction):
-            if interaction.user.id == 244703117659209728:
-                await interaction.response.send_message(f"Shutting down...")
-                await self.shutdown()
-            else:
-                return await interaction.response.send_message(f"t ki?")
-
-        @self.tree.command()
         @discord.app_commands.describe(
             title="Title of the manga"
         )
@@ -58,6 +50,20 @@ class Bot(discord.Client):
                 response = f"Found {result.title} {result.chapter} {result.link}"
 
             return await interaction.response.send_message(response)
+
+        @self.tree.command()
+        async def queue(interaction: discord.Interaction):
+            channel_id = interaction.channel_id
+            mangas = DB.get_mangas_from_channel(channel_id)
+            response = []
+
+            for manga in mangas:
+                response.append(f"{manga.title} - {manga.last_chapter}")
+
+            if response:
+                return await interaction.response.send_message("\n".join(response))
+            else:
+                return await interaction.response.send_message("Nothing registered")
 
     async def setup_hook(self):
         if (testing_guild_id := os.getenv("TESTING_GUILD_ID")) is not None:
@@ -105,3 +111,36 @@ class Bot(discord.Client):
 
         logger.info("Finished searching for releases")
 
+
+async def get_new_chapter_info(title: str) -> MangaChapter | None:
+    try:
+        manga = DB.get_manga_from_title(title)
+        result = await search_manga(title)
+    except Exception as e:
+        logger.error(f"Error while searching for {title}: {e}")
+        logger.debug(f"Did not found: {title}")
+        return None
+
+    if not result:
+        logger.debug(f"Did not found: {title}")
+        return None
+
+    if result.chapter <= manga.last_chapter:
+        logger.debug(f"No new chapters for: {title} (last chapter: {manga.last_chapter})")
+        return None
+
+    if not result.link:
+        logger.debug("Found new chapter but no link were provided")
+        return MangaChapter(title=title, number=result.chapter, link=None)
+
+    logger.debug(f"Found new chapter for: {title} (last chapter: {manga.last_chapter})")
+    return MangaChapter(title=title, number=result.chapter, link=result.link)
+
+
+async def update_last_chapter():
+    for manga in DB.get_mangas():
+        if manga.last_chapter == -1:
+            result: SearchMangaResult = await search_manga(manga.title)
+            if result:
+                DB.update_manga_chapter(manga.title, result.chapter)
+    logger.info("Finished updating last chapters")
