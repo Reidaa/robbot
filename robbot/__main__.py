@@ -21,12 +21,12 @@ class Main:
         self.discord_bot_token = os.getenv("DISCORD_TOKEN")
 
     async def _runner(self):
-        async with self.bot:
-            await self.bot.start(token=self.discord_bot_token, reconnect=True)
+        await self.bot.start(token=self.discord_bot_token, reconnect=True)
 
     def run(self):
         try:
-            asyncio.run(self._runner())
+            with asyncio.Runner() as runner:
+                runner.run(self._runner())
         except discord.errors.LoginFailure as e:
             logger.error(e)
             return 1
