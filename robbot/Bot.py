@@ -1,89 +1,23 @@
-import logging
 import os
 
 import discord
 from discord.ext import tasks
 
 from robbot import logger
-from robbot.db.ponydb import DB
+from robbot.db.database import PonyDB
 from robbot.services.reddit import search_manga
 from robbot.t import SearchMangaResult, MangaChapter
 from robbot.utils import format_response
 
+db = PonyDB()
 
-class Bot(discord.Client):
-    def __init__(self):
-        self.tree: discord.app_commands.CommandTree | None = None
 
-        intents = discord.Intents.default()
-        intents.messages = True
-        intents.message_content = True
-        intents.members = True
-
-        super().__init__(intents=intents)
-
-        self.register_cmds()
-
-    def register_cmds(self):
-        # A CommandTree is a special type that holds all the application command
-        # state required to make it work. This is a separate class because it
-        # allows all the extra state to be opt-in.
-        # Whenever you want to work with application commands, your tree is used
-        # to store and work with them.
-        # Note: When using commands.Bot instead of disc.Client, the bot will
-        # maintain its own tree instead.
-        self.tree = discord.app_commands.CommandTree(self)
-
-        @self.tree.command()
-        async def ping(interaction: discord.Interaction):
-            await interaction.response.send_message(f"pong {interaction.user.mention}")
-
-        @self.tree.command()
-        @discord.app_commands.describe(
-            title="Title of the manga"
-        )
-        async def search(interaction: discord.Interaction, title: str):
-            response = f"Did not found the manga {interaction.user.mention}"
-            result: SearchMangaResult = await search_manga(title)
-
-            if result:
-                response = f"Found {result.title} {result.chapter} {result.link}"
-
-            return await interaction.response.send_message(response)
-
-        @self.tree.command()
-        async def queue(interaction: discord.Interaction):
-            channel_id = interaction.channel_id
-            mangas = DB.get_mangas_from_channel(channel_id)
-            response = []
-
-            for manga in mangas:
-                response.append(f"{manga.title} - {manga.last_chapter}")
-
-            if response:
-                return await interaction.response.send_message("\n".join(response))
-            else:
-                return await interaction.response.send_message("Nothing registered")
-
-    async def setup_hook(self):
-        if (testing_guild_id := os.getenv("TESTING_GUILD_ID")) is not None:
-            logger.debug("Syncing commands with testing guild")
-            # Synchronize the app commands to one guild.
-            # Instead of specifying a guild to every command, we copy over our global commands instead.
-            # By doing so, we don't have to wait up to an hour until they are shown to the end-user.
-            testing_guild = discord.Object(id=int(testing_guild_id))
-            # This copies the global commands over to your guild.
-            self.tree.copy_global_to(guild=testing_guild)
-            await self.tree.sync(guild=testing_guild)
-
-    async def start(self, token: str, *, reconnect: bool = True) -> None:
-        discord.utils.setup_logging(level=logging.INFO)
-        return await super().start(token)
+class Bot(discord.Bot):
 
     async def on_ready(self):
         logger.info('Logged on as', self.user)
-        await update_last_chapter()
-        self.notify_new_releases.start()
+        # await update_last_chapter()
+        # self.notify_new_releases.start()
 
     async def close(self):
         """Logs out of Discord"""
@@ -95,17 +29,17 @@ class Bot(discord.Client):
     async def notify_new_releases(self):
         logger.debug("Searching for releases...")
 
-        for channel_id in DB.get_channels_ids():
+        for channel_id in db.channel.all():
             channel = self.get_channel(int(channel_id))
             if not channel:
                 logger.warning(f"channel {int(channel_id)} not found")
                 continue
             releases = []
-            for manga in DB.get_mangas_from_channel(channel_id):
+            for manga in db.manga.many(channel_id=channel_id):
                 chapter = await get_new_chapter_info(manga.title)
                 if chapter:
                     releases.append(format_response(chapter))
-                    DB.update_manga_chapter(manga.title, chapter.number)
+                    db.manga.update(manga.title, chapter.number)
             for release in releases:
                 await channel.send(release)
 
@@ -114,7 +48,7 @@ class Bot(discord.Client):
 
 async def get_new_chapter_info(title: str) -> MangaChapter | None:
     try:
-        manga = DB.get_manga_from_title(title)
+        manga = db.manga.unique(title=title)
         result = await search_manga(title)
     except Exception as e:
         logger.error(f"Error while searching for {title}: {e}")
@@ -138,9 +72,93 @@ async def get_new_chapter_info(title: str) -> MangaChapter | None:
 
 
 async def update_last_chapter():
-    for manga in DB.get_mangas():
+    for manga in db.manga.all():
         if manga.last_chapter == -1:
             result: SearchMangaResult = await search_manga(manga.title)
             if result:
-                DB.update_manga_chapter(manga.title, result.chapter)
+                db.manga.update(manga.title, result.chapter)
     logger.info("Finished updating last chapters")
+
+
+def get_bot() -> Bot:
+    bot = Bot()
+    guilds_ids = []
+
+    if t := os.getenv("TESTING_GUILD_ID"):
+        guilds_ids.append(t)
+
+    @bot.slash_command(description="Get Ponged", guild_ids=guilds_ids)
+    async def ping(ctx):
+        await ctx.respond(f"pong {ctx.author.mention}")
+
+    @bot.slash_command(description="Find the latest chapter for a given manga", guild_ids=guilds_ids)
+    async def search(ctx, title: discord.Option(str)):
+        if m := await search_manga(title):
+            return await ctx.respond(f"Found {m.title} {m.chapter} {m.link}")
+        else:
+            return await ctx.respond(f"Did not found the manga {ctx.author.mention}")
+
+    @bot.slash_command(
+        description="Display the list of mangas registered on this channel",
+        guild_ids=guilds_ids
+    )
+    async def queue(ctx):
+        channel_id = ctx.channel_id
+        response = []
+
+        if mangas := db.manga.many(channel_id=channel_id):
+            for manga in mangas:
+                response.append(f"{manga.title}")
+            return await ctx.respond("\n".join(response))
+        else:
+            return await ctx.respond("Nothing registered")
+
+    # @bot.slash_command(
+    #     description="Register a manga to receive notifications when a new chapter is released",
+    #     guild_ids=guilds_ids
+    # )
+    # async def register(ctx, title: discord.Option(str)):
+    #     def check(reaction: discord.Reaction, user):
+    #         if user != ctx.user:
+    #             return False
+    #         if str(reaction.emoji) not in ["✅", "❌"]:
+    #             return False
+    #         return True
+    #
+    #     await ctx.respond("Searching...")
+    #
+    #     if r := DB.get_mangas(channel_id=ctx.channel_id):
+    #         for manga in r:
+    #             if manga.title.lower() == title.lower():
+    #                 return await ctx.respond(f"{title} is already registered")
+    #
+    #     if r := DB.get_manga(title=title):
+    #         pass
+    #         return await ctx.respond(f"Registered {title}")
+    #
+    #     if searched := await search_manga(title):
+    #         message = await ctx.respond(
+    #             f"Found:\n{searched.title} {searched.chapter}\n{searched.link}, is this correct ?")
+    #         await message.add_reaction("✅")
+    #         await message.add_reaction("❌")
+    #
+    #         try:
+    #             reaction, user = await bot.wait_for("reaction_add", check=check, timeout=30)
+    #         except TimeoutError:
+    #             return await ctx.respond("Timeout-ed")
+    #         else:
+    #             if str(reaction.emoji) == "❌":
+    #                 return await ctx.respond("Canceling registration")
+    #             else:
+    #                 return await ctx.respond(f"Registered {title}")
+    #     else:
+    #         return await ctx.respond(f"Did not found {title}")
+
+    # manga = DB.get_manga_from_title(title)
+    #
+    # if manga:
+    #     DB.update_manga_channel(title, channel_id)
+    # else:
+    #     DB.add_manga(title, channel_id)
+
+    return bot
