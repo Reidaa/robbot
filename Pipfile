@@ -8,6 +8,7 @@ asyncpraw = "*"
 pony = "*"
 py-cord = "*"
 psycopg2 = "*"
+attrs = "*"
 
 [dev-packages]
 pytest = "*"

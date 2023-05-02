@@ -65,7 +65,7 @@ class PonyDB:
         @staticmethod
         @orm.db_session()
         def create(channel_id: int | UUID) -> bool:
-            if r := DBChannel.get(channel_id=channel_id):
+            if DBChannel.get(channel_id=channel_id):
                 return True
             else:
                 return False
@@ -80,13 +80,13 @@ def seed():
     dandadan = DBManga(title="dandadan", )
     gal = DBManga(title="I Want to Be Praised by a Gal Gamer!", )
 
-    test_channel = DBChannel(
+    DBChannel(
         channel_id=1082820333477838868,
         mangas=[chainsaw, mha, yumeochi, dandadan, gal]
     )
 
     # Has no access to
-    test_channel2 = DBChannel(
+    DBChannel(
         channel_id=551475962273857548,
         mangas=[chainsaw, mha, jujutsu]
     )

@@ -5,36 +5,36 @@ from asyncpraw import Reddit
 from asyncpraw.models import Submission
 
 from robbot import logger
-from robbot.t import SearchMangaResult
+from robbot.t import MangaChapter
 from robbot.utils import get_chapter_number
 
 
 async def search_subreddit(subreddit: str, query: str, sort: str = "relevance", limit: int = 100) -> list[Submission]:
-        logger.debug(f"searching {subreddit} for '{query}' with sort '{sort}'and limit '{limit}'")
-        submissions = []
-        async with Reddit(
-                client_id=os.getenv("REDDIT_ID"), 
-                client_secret=os.getenv("REDDIT_SECRET"), 
-                user_agent=os.getenv("REDDIT_AGENT")
-            ) as reddit:
-            subreddit = await reddit.subreddit(subreddit)
-            search_result = subreddit.search(query, sort=sort, limit=limit)
-            async for post in search_result:
-                submissions.append(post)
-        return submissions
-    
+    logger.debug(f"searching {subreddit} for '{query}' with sort '{sort}'and limit '{limit}'")
+    submissions = []
+    async with Reddit(
+            client_id=os.getenv("REDDIT_ID"),
+            client_secret=os.getenv("REDDIT_SECRET"),
+            user_agent=os.getenv("REDDIT_AGENT")
+    ) as reddit:
+        subreddit = await reddit.subreddit(subreddit)
+        search_result = subreddit.search(query, sort=sort, limit=limit)
+        async for post in search_result:
+            submissions.append(post)
+    return submissions
 
-async def search_manga(query: str) -> SearchMangaResult | None:
-    logger.debug(f"searching |{query}| on r/manga")
-    ret: Optional[SearchMangaResult] = None
-    chapters: list[int] = []
 
+async def search_manga(query: str) -> MangaChapter | None:
     def filter_fun(x: Submission):
         title = x.title.lower()
         if any(substring in title for substring in ["chapter", "ch"]):
             substrings = query.lower().split() + ["[disc]"]
             if all(substring in title for substring in substrings):
                 return x
+
+    logger.debug(f"searching |{query}| on r/manga")
+    ret: Optional[MangaChapter] = None
+    chapters: list[int] = []
 
     unfiltered = await search_subreddit(subreddit="manga", query=f"[disc] {query}")
     filtered = list(filter(filter_fun, unfiltered))
@@ -46,9 +46,9 @@ async def search_manga(query: str) -> SearchMangaResult | None:
         idx: int = chapters.index(last_chapter)
 
         if filtered[idx].title.lower().startswith("[disc]"):
-            ret = SearchMangaResult(
+            ret = MangaChapter(
                 title=filtered[idx].title[7:],
-                chapter=last_chapter,
+                number=last_chapter,
                 link=filtered[idx].url
             )
         else:
@@ -57,5 +57,3 @@ async def search_manga(query: str) -> SearchMangaResult | None:
         pass
 
     return ret
-
-# async def search_anime(query: str)

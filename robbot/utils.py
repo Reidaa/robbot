@@ -18,12 +18,12 @@ def get_chapter_number(chapter_title) -> Optional[int]:
         return None
 
 
-def format_user_ping(id: int) -> str:
-    return f"<@{id}>"
+def format_user_ping(user_id: int) -> str:
+    return f"<@{user_id}>"
 
 
-def format_role_ping(id: int) -> str:
-    return f"<@&{id}>"
+def format_role_ping(role_id: int) -> str:
+    return f"<@&{role_id}>"
 
 
 def dotenv_check():

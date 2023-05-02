@@ -1,22 +1,14 @@
-from dataclasses import dataclass, field
-from typing import Optional
+from attrs import frozen, field
 
 
-@dataclass(frozen=True)
+@frozen
 class Manga:
-    title: str
+    title: str = field(eq=str.lower)
     last_chapter: int
 
 
-@dataclass(frozen=True)
+@frozen
 class MangaChapter:
     title: str
     number: int
-    link: Optional[str] = field(default=None)
-
-
-@dataclass(frozen=True)
-class SearchMangaResult:
-    title: str
-    chapter: int
-    link: Optional[str] = field(default=None)
+    link: str | None = field(default=None)

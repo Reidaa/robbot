@@ -6,7 +6,7 @@ from discord.ext import tasks
 from robbot import logger
 from robbot.db.database import PonyDB
 from robbot.services.reddit import search_manga
-from robbot.t import SearchMangaResult, MangaChapter
+from robbot.t import MangaChapter
 from robbot.utils import format_response
 
 db = PonyDB()
@@ -59,24 +59,24 @@ async def get_new_chapter_info(title: str) -> MangaChapter | None:
         logger.debug(f"Did not found: {title}")
         return None
 
-    if result.chapter <= manga.last_chapter:
+    if result.number <= manga.last_chapter:
         logger.debug(f"No new chapters for: {title} (last chapter: {manga.last_chapter})")
         return None
 
     if not result.link:
         logger.debug("Found new chapter but no link were provided")
-        return MangaChapter(title=title, number=result.chapter, link=None)
+        return MangaChapter(title=title, number=result.number, link=None)
 
     logger.debug(f"Found new chapter for: {title} (last chapter: {manga.last_chapter})")
-    return MangaChapter(title=title, number=result.chapter, link=result.link)
+    return MangaChapter(title=title, number=result.number, link=result.link)
 
 
 async def update_last_chapter():
     for manga in db.manga.all():
         if manga.last_chapter == -1:
-            result: SearchMangaResult = await search_manga(manga.title)
+            result: MangaChapter = await search_manga(manga.title)
             if result:
-                db.manga.update(manga.title, result.chapter)
+                db.manga.update(manga.title, result.number)
     logger.info("Finished updating last chapters")
 
 
@@ -94,7 +94,7 @@ def get_bot() -> Bot:
     @bot.slash_command(description="Find the latest chapter for a given manga", guild_ids=guilds_ids)
     async def search(ctx, title: discord.Option(str)):
         if m := await search_manga(title):
-            return await ctx.respond(f"Found {m.title} {m.chapter} {m.link}")
+            return await ctx.respond(f"Found {m.title} {m.number} {m.link}")
         else:
             return await ctx.respond(f"Did not found the manga {ctx.author.mention}")
 
