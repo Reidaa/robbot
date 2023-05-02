@@ -33,9 +33,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pipenv install --deploy --dev
+          pipenv install --system --deploy --dev
 
       - name: Test with pytest
         run: |
-          pipenv shell
           pytest
