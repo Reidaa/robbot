@@ -4,13 +4,13 @@ from typing import Optional
 from asyncpraw import Reddit
 from asyncpraw.models import Submission
 
-from robbot import logger
+from robbot import log
 from robbot.t import MangaChapter
 from robbot.utils import get_chapter_number
 
 
 async def search_subreddit(subreddit: str, query: str, sort: str = "relevance", limit: int = 100) -> list[Submission]:
-    logger.debug(f"searching {subreddit} for '{query}' with sort '{sort}'and limit '{limit}'")
+    log.debug(f"searching {subreddit} for '{query}' with sort '{sort}'and limit '{limit}'")
     submissions = []
     async with Reddit(
             client_id=os.getenv("REDDIT_ID"),
@@ -32,7 +32,7 @@ async def search_manga(query: str) -> MangaChapter | None:
             if all(substring in title for substring in substrings):
                 return x
 
-    logger.debug(f"searching |{query}| on r/manga")
+    log.debug(f"searching |{query}| on r/manga")
     ret: Optional[MangaChapter] = None
     chapters: list[int] = []
 

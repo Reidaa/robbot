@@ -1,7 +1,9 @@
+import logging
+
 import discord
 from discord.ext import tasks
 
-from robbot import logger
+from robbot import log
 from robbot.db.database import PonyDB
 from robbot.services.reddit import search_manga
 from robbot.t import MangaChapter
@@ -13,11 +15,12 @@ db = PonyDB()
 class Bot(discord.Bot):
     def __init__(self):
         super().__init__()
+        log.get_logger("discord", stderr=True).setLevel(logging.DEBUG)
         self.load_extension("robbot.cogs.Basic")
         self.load_extension("robbot.cogs.Manga")
 
     async def on_ready(self):
-        logger.info('Logged on as', self.user)
+        log.info('Logged on as', self.user)
         # await update_last_chapter()
         # self.notify_new_releases.start()
 
@@ -25,16 +28,16 @@ class Bot(discord.Bot):
         """Logs out of Discord"""
         self.notify_new_releases.cancel()
         await super().close()
-        logger.info("Closed")
+        log.info("Closed")
 
     @tasks.loop(seconds=5 * 60)
     async def notify_new_releases(self):
-        logger.debug("Searching for releases...")
+        log.debug("Searching for releases...")
 
         for channel_id in db.channel.all():
             channel = self.get_channel(int(channel_id))
             if not channel:
-                logger.warning(f"channel {int(channel_id)} not found")
+                log.warning(f"channel {int(channel_id)} not found")
                 continue
             releases = []
             for manga in db.manga.many(channel_id=channel_id):
@@ -45,7 +48,7 @@ class Bot(discord.Bot):
             for release in releases:
                 await channel.send(release)
 
-        logger.info("Finished searching for releases")
+        log.info("Finished searching for releases")
 
 
 async def get_new_chapter_info(title: str) -> MangaChapter | None:
@@ -53,23 +56,23 @@ async def get_new_chapter_info(title: str) -> MangaChapter | None:
         manga = db.manga.unique(title=title)
         result = await search_manga(title)
     except Exception as e:
-        logger.error(f"Error while searching for {title}: {e}")
-        logger.debug(f"Did not found: {title}")
+        log.error(f"Error while searching for {title}: {e}")
+        log.debug(f"Did not found: {title}")
         return None
 
     if not result:
-        logger.debug(f"Did not found: {title}")
+        log.debug(f"Did not found: {title}")
         return None
 
     if result.number <= manga.last_chapter:
-        logger.debug(f"No new chapters for: {title} (last chapter: {manga.last_chapter})")
+        log.debug(f"No new chapters for: {title} (last chapter: {manga.last_chapter})")
         return None
 
     if not result.link:
-        logger.debug("Found new chapter but no link were provided")
+        log.debug("Found new chapter but no link were provided")
         return MangaChapter(title=title, number=result.number, link=None)
 
-    logger.debug(f"Found new chapter for: {title} (last chapter: {manga.last_chapter})")
+    log.debug(f"Found new chapter for: {title} (last chapter: {manga.last_chapter})")
     return MangaChapter(title=title, number=result.number, link=result.link)
 
 
@@ -79,4 +82,4 @@ async def update_last_chapter():
             result: MangaChapter = await search_manga(manga.title)
             if result:
                 db.manga.update(manga.title, result.number)
-    logger.info("Finished updating last chapters")
+    log.info("Finished updating last chapters")

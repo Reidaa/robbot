@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Optional
 
-from robbot import logger
+from robbot import log
 from robbot.t import MangaChapter
 
 
@@ -31,12 +31,12 @@ def dotenv_check():
         from dotenv import load_dotenv
         env_path = Path(__file__).parent.parent / ".env"
         if not load_dotenv(dotenv_path=env_path, override=True):
-            logger.error(f"Unable to load .env file from: {env_path}")
+            log.error(f"Unable to load .env file from: {env_path}")
             return 1
         else:
-            logger.debug(f"Loaded .env file from: {env_path}")
+            log.debug(f"Loaded .env file from: {env_path}")
     except ImportError:
-        logger.debug("Unable to load .env file, dotenv not installed, reading from environment variables")
+        log.debug("Unable to load .env file, dotenv not installed, reading from environment variables")
 
 
 def format_response(chapter: MangaChapter) -> str:
