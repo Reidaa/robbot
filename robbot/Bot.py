@@ -92,7 +92,8 @@ def get_bot() -> Bot:
         await ctx.respond(f"pong {ctx.author.mention}")
 
     @bot.slash_command(description="Find the latest chapter for a given manga", guild_ids=guilds_ids)
-    async def search(ctx, title: discord.Option(str)):
+    @discord.option("title", type=str, description="The title of the manga to search for", required=True)
+    async def search(ctx, title: str):
         if m := await search_manga(title):
             return await ctx.respond(f"Found {m.title} {m.number} {m.link}")
         else:
@@ -102,7 +103,7 @@ def get_bot() -> Bot:
         description="Display the list of mangas registered on this channel",
         guild_ids=guilds_ids
     )
-    async def queue(ctx):
+    async def queue(ctx: discord.ApplicationContext):
         channel_id = ctx.channel_id
         response = []
 
