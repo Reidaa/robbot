@@ -5,7 +5,7 @@ from discord.ext import tasks
 
 from robbot import log
 from robbot.db.database import PonyDB
-from robbot.services.reddit import search_manga
+from robbot.services import reddit
 from robbot.t import MangaChapter
 from robbot.utils import format_response
 
@@ -16,7 +16,7 @@ class Bot(discord.Bot):
     def __init__(self):
         super().__init__()
         log.get_logger("discord", stderr=True).setLevel(logging.DEBUG)
-        self.load_extension("robbot.cogs.Basic")
+        # self.load_extension("robbot.cogs.Basic")
         self.load_extension("robbot.cogs.Manga")
 
     async def on_ready(self):
@@ -57,7 +57,7 @@ async def get_new_chapter_info(title: str) -> MangaChapter | None:
         return None
 
     try:
-        result = await search_manga(title)
+        result = await reddit.notsync.search_manga(title)
     except Exception as e:
         log.error(f"Error while searching for {title}: {e}")
         log.debug(f"Did not found: {title}")

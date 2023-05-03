@@ -6,7 +6,7 @@ from . import db
 
 
 class Channel(db.Entity):
-    _table_ = 'channel'
+    _table_ = 'Channel'
     id = PrimaryKey(int, auto=True)
     mangas = Set('Manga')
     channel_id = Required(UUID, unique=True)

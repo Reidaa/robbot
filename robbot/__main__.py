@@ -9,7 +9,7 @@ import os
 import robbot.log as log
 from robbot.Bot import Bot
 from robbot.db.database import PonyDB
-from robbot.services.reddit import reddit
+from robbot.services import reddit
 from robbot.utils import dotenv_check
 
 db = PonyDB()
@@ -20,6 +20,7 @@ def update_db():
     for manga in db.manga.all():
         if manga.last_chapter == -1:
             if result := reddit.sync.search_manga(manga.title):
+                log.info(f"Updating {manga.title} to chapter {result.number}")
                 db.manga.update(manga.title, result.number)
             else:
                 continue

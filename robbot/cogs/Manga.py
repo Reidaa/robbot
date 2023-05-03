@@ -4,7 +4,7 @@ import discord
 from discord.ext import commands
 
 from robbot.db.database import PonyDB
-from robbot.services.reddit import search_manga
+from robbot.services import reddit
 
 db = PonyDB()
 
@@ -21,7 +21,7 @@ class Manga(commands.Cog):
     @discord.slash_command(description="Find the latest chapter for a given manga", guild_ids=guilds_ids)
     @discord.option("title", type=str, description="The title of the manga to search for", required=True)
     async def search(self, ctx, title: str):
-        if m := await search_manga(title):
+        if m := await reddit.notsync.search_manga(title):
             return await ctx.respond(f"Found {m.title} {m.number} {m.link}")
         else:
             return await ctx.respond(f"Did not found the manga {ctx.author.mention}")

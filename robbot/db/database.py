@@ -71,7 +71,13 @@ class PonyDB:
                 return False
 
 
-@orm.db_session
+def reset_db():
+    db.drop_all_tables(with_all_data=True)
+    db.create_tables()
+    seed()
+
+
+@orm.db_session()
 def seed():
     chainsaw = DBManga(title="chainsaw man", )
     mha = DBManga(title="my hero academia", )
@@ -93,4 +99,4 @@ def seed():
 
 
 if __name__ == "__main__":
-    seed()
+    reset_db()
