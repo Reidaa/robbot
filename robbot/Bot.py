@@ -21,8 +21,7 @@ class Bot(discord.Bot):
 
     async def on_ready(self):
         log.info('Logged on as', self.user)
-        # await update_last_chapter()
-        # self.notify_new_releases.start()
+        self.notify_new_releases.start()
 
     async def close(self):
         """Logs out of Discord"""
@@ -52,8 +51,12 @@ class Bot(discord.Bot):
 
 
 async def get_new_chapter_info(title: str) -> MangaChapter | None:
+    if not (manga := db.manga.unique(title=title)):
+        log.error(f"Error while searching for {title}: Manga not registered")
+        log.debug(f"Did not found: {title}")
+        return None
+
     try:
-        manga = db.manga.unique(title=title)
         result = await search_manga(title)
     except Exception as e:
         log.error(f"Error while searching for {title}: {e}")
@@ -74,12 +77,3 @@ async def get_new_chapter_info(title: str) -> MangaChapter | None:
 
     log.debug(f"Found new chapter for: {title} (last chapter: {manga.last_chapter})")
     return MangaChapter(title=title, number=result.number, link=result.link)
-
-
-async def update_last_chapter():
-    for manga in db.manga.all():
-        if manga.last_chapter == -1:
-            result: MangaChapter = await search_manga(manga.title)
-            if result:
-                db.manga.update(manga.title, result.number)
-    log.info("Finished updating last chapters")

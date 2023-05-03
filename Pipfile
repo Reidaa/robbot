@@ -9,6 +9,7 @@ pony = "*"
 py-cord = "*"
 psycopg2 = "*"
 attrs = "*"
+praw = "*"
 
 [dev-packages]
 pytest = "*"
