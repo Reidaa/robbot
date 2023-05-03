@@ -7,7 +7,7 @@ This module contains the main logic for the RobBot bot.
 import os
 
 import robbot.log as log
-from robbot.Bot import Bot
+from bot.Bot import Bot
 from robbot.db.database import PonyDB
 from robbot.services import reddit
 from robbot.utils import dotenv_check
