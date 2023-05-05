@@ -19,9 +19,9 @@ def update_db():
     log.info("Updating database...")
     for manga in db.manga.all():
         if manga.last_chapter == -1:
-            if result := reddit.sync.search_manga(manga.title):
-                log.info(f"Updating {manga.title} to chapter {result.number}")
-                db.manga.update(manga.title, result.number)
+            if r := reddit.sync.search_manga(manga.title):
+                log.info(f"Updating {manga.title} to chapter {r.number}")
+                db.manga.update(manga.title, r.number)
             else:
                 continue
         else:

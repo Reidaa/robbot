@@ -12,3 +12,9 @@ class MangaChapter:
     title: str
     number: int
     link: str | None = field(default=None)
+
+
+@frozen
+class Channel:
+    channel_id: int
+    mangas: list[Manga] = field(factory=list)
