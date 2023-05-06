@@ -94,40 +94,42 @@ class Manga(commands.Cog):
         description="Display the list of mangas registered on this channel",
         guild_ids=guilds_ids
     )
+    @discord.option("channel", type=discord.TextChannel, description="The channel to display the queue for", )
     async def queue(self, ctx: discord.ApplicationContext, channel: discord.TextChannel | None = None):
-        target: int = channel.id if channel else ctx.channel_id
+        channel: discord.TextChannel = channel if channel else ctx.channel
 
-        if not db.channel.unique(channel_id=target):
+        if not db.channel.unique(channel_id=channel.id):
             return await ctx.respond("Nothing registered")
 
-        if mangas := db.manga.many(channel_id=target):
-            response = [f"{manga.title} - {manga.last_chapter}" for manga in mangas]
-            return await ctx.respond("\n".join(response))
+        if mangas := db.manga.many(channel_id=channel.id):
+            response = [f"- {manga.title} {manga.last_chapter}" for manga in mangas]
+            return await ctx.respond(f"Manga on {channel.mention}\n\n" + "\n".join(response))
         else:
-            return await ctx.respond("Nothing registered here")
+            return await ctx.respond(f"Nothing registered on {channel.mention}")
 
     @discord.slash_command(
         description="Register a manga to receive notifications when a new chapter is released",
         guild_ids=guilds_ids
     )
+    @discord.option("channel", type=discord.TextChannel, description="The channel to register the manga on",
+                    required=True)
     @discord.option("title", type=str, description="The title of the manga to search for", required=True)
-    @discord.option("channel", type=discord.TextChannel, description="The channel to register the manga to")
-    async def register(self, ctx: discord.commands.context.ApplicationContext, title: str,
-                       channel: discord.TextChannel | None = None):
+    async def register(self, ctx: discord.commands.context.ApplicationContext, channel: discord.TextChannel,
+                       title: str):
         await ctx.defer()
 
-        target: int = channel.id if channel else ctx.channel_id
+        channel: discord.TextChannel = channel if channel else ctx.channel
 
-        if not db.channel.unique(channel_id=target):
-            db.channel.create(channel_id=target)
+        if not db.channel.unique(channel_id=channel.id):
+            db.channel.create(channel_id=channel.id)
 
-        if ms := db.manga.many(channel_id=target):
+        if ms := db.manga.many(channel_id=channel.id):
             for m in ms:
                 if m.title.lower() == title.lower():
                     return await ctx.followup.send(f"**{title}** is already registered")
 
         if db.manga.unique(title=title):
-            if db.channel.update(channel_id=target, title=title):
+            if db.channel.update(channel_id=channel.id, title=title):
                 return await ctx.followup.send(f"Registered **{title}** on {channel.mention}")
             else:
                 return await ctx.followup.send(f"Error")
@@ -144,10 +146,8 @@ class Manga(commands.Cog):
         description="Unregister a manga to stop receiving notifications when a new chapter is released",
         guild_ids=guilds_ids,
     )
-    @discord.option(
-        name="title", type=str, required=True, autocomplete=get_unregister_autocomplete,
-        description="The REGISTERED title of the manga to remove",
-    )
+    @discord.option(name="title", type=str, required=True, autocomplete=get_unregister_autocomplete,
+                    description="The REGISTERED title of the manga to remove", )
     @discord.option(name="channel", type=discord.TextChannel, description="The channel to unregister the manga from",
                     required=True)
     async def unregister(self, ctx: discord.commands.context.ApplicationContext, channel: discord.TextChannel,
@@ -172,7 +172,7 @@ class Manga(commands.Cog):
 
 
 async def _get_new_chapter_info(title: str) -> MangaChapter | None:
-    if not (manga := db.manga.unique(title=title)):
+    if not (m := db.manga.unique(title=title)):
         log.error(f"Error while searching for {title}: Manga not registered")
         log.debug(f"Did not found: {title}")
         return None
@@ -188,15 +188,15 @@ async def _get_new_chapter_info(title: str) -> MangaChapter | None:
         log.debug(f"Did not found: {title}")
         return None
 
-    if result.number <= manga.last_chapter:
-        log.debug(f"No new chapters for: {title} (last chapter: {manga.last_chapter})")
+    if result.number <= m.last_chapter:
+        log.debug(f"No new chapters for: {title} (last chapter: {m.last_chapter})")
         return None
 
     if not result.link:
         log.debug("Found new chapter but no link were provided")
         return MangaChapter(title=title, number=result.number, link=None)
 
-    log.debug(f"Found new chapter for: {title} (last chapter: {manga.last_chapter})")
+    log.debug(f"Found new chapter for: {title} (last chapter: {m.last_chapter})")
     return MangaChapter(title=title, number=result.number, link=result.link)
 
 
