@@ -14,7 +14,7 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   APP_NAME: robbot
-  CONTAINER: podman
+  CONTAINER: docker
 
 jobs:
   publish:
