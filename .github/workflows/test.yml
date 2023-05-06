@@ -1,0 +1,40 @@
+# Simple workflow for deploying static content to GitHub Pages
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+name: Test
+
+on:
+  push:
+    paths:
+      - "**.py"
+      - "**/test.yml"
+
+jobs:
+  test:
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.11"
+
+      - name: Upgrade pip
+        run: |
+          python -m pip install --upgrade pip
+
+      - name: Install pipenv
+        run: |
+          pip install pipenv
+
+      - name: Install dependencies
+        run: |
+          pipenv install --system --deploy --dev
+
+      - name: Test with pytest
+        run: |
+          pytest

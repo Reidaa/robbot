@@ -4,36 +4,48 @@
 This module contains the main logic for the RobBot bot.
 """
 
-import asyncio
 import os
 
-import discord
-
-from robbot import logger
-from robbot.Bot import Bot
+import robbot.log as log
+from bot.Bot import Bot
+from robbot.db.database import PonyDB
+from robbot.services import reddit
 from robbot.utils import dotenv_check
 
+db = PonyDB()
 
-def main():
-    dotenv_check()
-    discord_bot_token = os.getenv("DISCORD_TOKEN")
-    bot = Bot()
 
-    async def runner():
-        async with bot:
-            await bot.start(token=discord_bot_token, reconnect=True)
+def update_db():
+    log.info("Updating database...")
+    for manga in db.manga.all():
+        if manga.last_chapter == -1:
+            if r := reddit.sync.search_manga(manga.title):
+                log.info(f"Updating {manga.title} to chapter {r.number}")
+                db.manga.update(manga.title, r.number)
+            else:
+                continue
+        else:
+            continue
+    log.info("Finished updating database")
 
-    try:
-        asyncio.run(runner())
-    except discord.errors.LoginFailure as e:
-        logger.error(e)
-        return 1
-    except KeyboardInterrupt:
-        logger.info("KeyboardInterrupt received, exiting...")
-        return 0
+
+def setup():
+    update_db()
+
+
+class Main:
+    def __init__(self):
+        dotenv_check()
+        self.bot = Bot()
+        self.discord_bot_token = os.getenv("DISCORD_TOKEN")
+
+        setup()
+
+    def run(self):
+        self.bot.run(self.discord_bot_token)
 
 
 if __name__ == "__main__":
     import sys
 
-    sys.exit(main())
+    sys.exit(Main().run())

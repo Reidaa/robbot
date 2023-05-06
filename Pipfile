@@ -4,8 +4,12 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-"discord.py" = "*"
 asyncpraw = "*"
+pony = "*"
+py-cord = "*"
+psycopg2 = "*"
+attrs = "*"
+praw = "*"
 
 [dev-packages]
 pytest = "*"
