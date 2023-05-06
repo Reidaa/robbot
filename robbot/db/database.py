@@ -90,6 +90,21 @@ class PonyDB:
 
         @staticmethod
         @orm.db_session()
+        def remove(channel_id: int, title: str) -> Channel | None:
+            if c := DBChannel.get(channel_id=str(channel_id)):
+                if m := DBManga.get(title=title.lower()):
+                    c.mangas.remove(m)
+                    return Channel(
+                        channel_id=int(c.channel_id),
+                        mangas=[Manga(title=i.title, last_chapter=i.last_chapter) for i in c.mangas.select()]
+                    )
+                else:
+                    return None
+            else:
+                return None
+
+        @staticmethod
+        @orm.db_session()
         def unique(channel_id: int) -> Channel | None:
             if c := DBChannel.get(channel_id=str(channel_id)):
                 return Channel(
