@@ -92,15 +92,28 @@ jobs:
           echo "Removing container"
           ssh $SSH_USER@$SSH_HOST "$CONTAINER container rm -f $APP_NAME || true"
           echo "Starting container"
-          ssh $SSH_USER@$SSH_HOST "$CONTAINER run --env REDDIT_ID=$REDDIT_ID --env REDDIT_SECRET=$REDDIT_SECRET --env REDDIT_AGENT=$REDDIT_AGENT --env DISCORD_TOKEN=$DISCORD_TOKEN --env TESTING_GUILD_ID=$TESTING_GUILD_ID --env TESTING_CHANNEL_ID=$TESTING_CHANNEL_ID --name $APP_NAME -d --restart unless-stopped $IMAGE_TAG"
+          ssh $SSH_USER@$SSH_HOST "$CONTAINER run \
+            --env DB_PROVIDER=postgres \
+            --env POSTGRES_USER=$POSTGRES_USER \
+            --env POSTGRES_PASSWORD=$POSTGRES_PASSWORD \
+            --env POSTGRES_DB=$POSTGRES_DB \
+            --env POSTGRES_HOST=$POSTGRES_HOST \
+            --env REDDIT_ID=$REDDIT_ID \
+            --env REDDIT_SECRET=$REDDIT_SECRET \ 
+            --env REDDIT_AGENT=$REDDIT_AGENT 
+            --env DISCORD_TOKEN=$DISCORD_TOKEN \
+            --name $APP_NAME -d --restart unless-stopped $IMAGE_TAG"
         env:
           IMAGE_TAG: ${{ steps.meta.outputs.tags }}
           APP_NAME: ${{ env.APP_NAME }}
           SSH_USER: ${{ secrets.SSH_USER }}
           SSH_HOST: ${{ secrets.SSH_HOST }}
+          DB_PROVIDER: ${{ vars.DB_PROVIDER }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
           REDDIT_ID: ${{ secrets.REDDIT_ID }}
           REDDIT_SECRET: ${{ secrets.REDDIT_SECRET }}
           REDDIT_AGENT: ${{ vars.REDDIT_AGENT }}
           DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
-          TESTING_GUILD_ID: ${{ vars.TESTING_GUILD_ID }}
-          TESTING_CHANNEL_ID: ${{ vars.TESTING_CHANNEL_ID }}
