@@ -10,7 +10,7 @@ from robbot.t import Manga, Channel
 
 
 def _binder():
-    match os.getenv("DB_PROVIDER"):
+    match d := os.getenv("DB_PROVIDER"):
         case "postgres":
             db.bind(
                 provider="postgres",
@@ -22,7 +22,7 @@ def _binder():
         case "sqlite":
             db.bind(provider="sqlite", filename="robbot.db", create_db=True)
         case _:  # pragma: no cover
-            raise ValueError("Invalid database provider")
+            raise ValueError(f"Invalid database provider: {d}")
 
     db.generate_mapping(create_tables=True)
 
