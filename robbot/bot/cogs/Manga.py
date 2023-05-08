@@ -3,7 +3,7 @@ import os
 import discord
 from discord.ext import commands, tasks
 
-import log
+from robbot import log
 from robbot.db.database import PonyDB
 from robbot.services import database
 from robbot.services import reddit
@@ -99,7 +99,7 @@ class Manga(commands.Cog):
         channel: discord.TextChannel = channel if channel else ctx.channel
 
         if not db.channel.unique(channel_id=channel.id):
-            return await ctx.respond("Nothing registered")
+            return await ctx.respond(f"Nothing registered on {channel.mention}")
 
         if mangas := db.manga.many(channel_id=channel.id):
             response = [f"- {manga.title} {manga.last_chapter}" for manga in mangas]

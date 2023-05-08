@@ -6,11 +6,14 @@ This module contains the main logic for the RobBot bot.
 
 import os
 
+from robbot.utils import dotenv_check
+
+dotenv_check()
+
 import robbot.log as log
-from bot.Bot import Bot
+from robbot.bot.Bot import Bot
 from robbot.db.database import PonyDB
 from robbot.services import reddit
-from robbot.utils import dotenv_check
 
 db = PonyDB()
 
@@ -35,7 +38,6 @@ def setup():
 
 class Main:
     def __init__(self):
-        dotenv_check()
         self.bot = Bot()
         self.discord_bot_token = os.getenv("DISCORD_TOKEN")
 

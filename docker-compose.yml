@@ -5,15 +5,20 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: robbot
-    restart: unless-stopped
+    links:
+      - postgres
     environment:
-      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - DB_PROVIDER=postgres
       - REDDIT_ID=${REDDIT_ID}
       - REDDIT_SECRET=${REDDIT_SECRET}
       - REDDIT_AGENT=${REDDIT_AGENT}
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
       - TESTING_GUILD_ID=${TESTING_GUILD_ID}
       - TESTING_CHANNEL_ID=${TESTING_CHANNEL_ID}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=postgres
 
   postgres:
     image: postgres:15
@@ -22,6 +27,6 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_USER=dev
-      - POSTGRES_PASSWORD=root
-      - POSTGRES_DB=robbot
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}

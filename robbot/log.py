@@ -1,6 +1,6 @@
 import logging
 import sys
-from logging.handlers import TimedRotatingFileHandler
+# from logging.handlers import TimedRotatingFileHandler
 
 FORMAT = '%(asctime)s\t[%(levelname)s]\t%(message)s'
 FORMATTER = logging.Formatter(FORMAT)
@@ -12,8 +12,9 @@ CONSOLE_HANDLER_STDOUT.setFormatter(FORMATTER)
 CONSOLE_HANDLER_STDERR = logging.StreamHandler(sys.stderr)
 CONSOLE_HANDLER_STDERR.setFormatter(FORMATTER)
 
-FILE_HANDLER = TimedRotatingFileHandler(LOG_FILE)
-FILE_HANDLER.setFormatter(FORMATTER)
+
+# FILE_HANDLER = TimedRotatingFileHandler(LOG_FILE)
+# FILE_HANDLER.setFormatter(FORMATTER)
 
 
 def get_console_handler(sterr: bool = False) -> logging.StreamHandler:
@@ -22,8 +23,8 @@ def get_console_handler(sterr: bool = False) -> logging.StreamHandler:
     return CONSOLE_HANDLER_STDOUT
 
 
-def get_file_handler() -> logging.FileHandler:
-    return FILE_HANDLER
+# def get_file_handler() -> logging.FileHandler:
+#     return FILE_HANDLER
 
 
 def get_logger(logger_name: str, stderr: bool = False) -> logging.Logger:

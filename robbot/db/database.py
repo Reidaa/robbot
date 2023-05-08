@@ -1,3 +1,4 @@
+import os
 from uuid import UUID
 
 from pony import orm
@@ -7,8 +8,23 @@ from robbot.db.models import Manga as DBManga
 from robbot.db.models import db
 from robbot.t import Manga, Channel
 
-db.bind(provider="sqlite", filename="robbot.db", create_db=True)
-db.generate_mapping(create_tables=True)
+
+def _binder():
+    match os.getenv("DB_PROVIDER"):
+        case "postgres":
+            db.bind(
+                provider="postgres",
+                user=os.getenv("POSTGRES_USER"),
+                password=os.getenv("POSTGRES_PASSWORD"),
+                host=os.getenv("POSTGRES_HOST"),
+                database=os.getenv("POSTGRES_DB"),
+            )
+        case "sqlite":
+            db.bind(provider="sqlite", filename="robbot.db", create_db=True)
+        case _:  # pragma: no cover
+            raise ValueError("Invalid database provider")
+
+    db.generate_mapping(create_tables=True)
 
 
 class PonyDB:
@@ -115,10 +131,12 @@ class PonyDB:
                 return None
 
 
-def reset_db():
+def erase():
     db.drop_all_tables(with_all_data=True)
+
+
+def create():
     db.create_tables()
-    seed()
 
 
 @orm.db_session()
@@ -142,5 +160,4 @@ def seed():
     )
 
 
-if __name__ == "__main__":
-    reset_db()
+_binder()

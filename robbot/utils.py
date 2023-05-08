@@ -32,7 +32,6 @@ def dotenv_check():
         env_path = Path(__file__).parent.parent / ".env"
         if not load_dotenv(dotenv_path=env_path, override=True):
             log.error(f"Unable to load .env file from: {env_path}")
-            return 1
         else:
             log.debug(f"Loaded .env file from: {env_path}")
     except ImportError:
