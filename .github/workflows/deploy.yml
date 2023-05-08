@@ -3,12 +3,12 @@ name: Deploy
   workflow_dispatch:
     inputs:
       environment:
+        type: environment
         description: Select environment
-        required: true
-      choice:
-        description: Choice of environment
-        type: choice
-        options: [ 'production', 'staging' ]
+#      choice:
+#        description: Choice of environment
+#        type: choice
+#        options: [ 'production', 'staging' ]
 
 env:
   REGISTRY: ghcr.io
