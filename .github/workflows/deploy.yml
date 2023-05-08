@@ -45,7 +45,7 @@ jobs:
   deploy:
     needs: publish
     runs-on: ubuntu-latest
-    environment: test
+    environment: ${{ github.event.inputs.environment }}
     steps:
       - name: Extract Docker metadata
         id: meta
