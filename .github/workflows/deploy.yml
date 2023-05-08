@@ -3,9 +3,13 @@ name: Deploy
   workflow_dispatch:
     inputs:
       environment:
-        description: Environment to deploy to
+        description: Select environment
         required: true
-        default: test
+      choice:
+        description: Choice of environment
+        type: choice
+        options: [ 'production', 'staging' ]
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: '${{ github.repository }}'
