@@ -12,11 +12,12 @@ from robbot.utils import format_response
 
 db = PonyDB()
 
-guilds_ids = []
+guilds_ids: list | None = []
 
 if t := os.getenv("TESTING_GUILD_ID"):
     guilds_ids.append(t)
-
+else:
+    guilds_ids = None
 
 def get_unregister_autocomplete(ctx: discord.AutocompleteContext) -> list[str]:
     target = ctx.options["channel"] if ctx.options["channel"] else ctx.interaction.channel_id
