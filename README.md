@@ -3,4 +3,4 @@
 ## TODO
 
 * Gracefully exit when SIGTERM
-* Add Prisma
+* Writing a README
