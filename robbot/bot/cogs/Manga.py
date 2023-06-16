@@ -19,6 +19,7 @@ if t := os.getenv("TESTING_GUILD_ID"):
 else:
     guilds_ids = None
 
+
 def get_unregister_autocomplete(ctx: discord.AutocompleteContext) -> list[str]:
     target = ctx.options["channel"] if ctx.options["channel"] else ctx.interaction.channel_id
     if not db.channel.unique(channel_id=target):
@@ -37,25 +38,30 @@ class CorrectMangaView(discord.ui.View):
         return interaction.user.id == self._author.id
 
     def disable_buttons(self):
-        for child in self.children:
-            child.disabled = True
+        self.stop()
 
     @discord.ui.button(label="Yes", style=discord.ButtonStyle.primary, emoji="✅")
     async def yes(self, _, interaction: discord.Interaction):
-        self.disable_buttons()
         try:
             database.add_manga_to_channel(title=self._title, manga=self._chapter, channel_id=interaction.channel_id)
         except Exception as e:
             return await interaction.response.send_message(f"Error: {e}", ephemeral=True)
         else:
             await interaction.message.add_reaction("✅")
-            return await interaction.response.edit_message(view=self)
+            await interaction.response.edit_message(view=self)
+        finally:
+            self.disable_buttons()
 
     @discord.ui.button(label="No", style=discord.ButtonStyle.primary, emoji="❌")
     async def no(self, _, interaction: discord.Interaction):
         self.disable_buttons()
         await interaction.message.add_reaction("❌")
         return await interaction.response.edit_message(view=self)
+
+
+# TODO: Add a way to search the last chapter of a manga
+def find_last_chapter(title):
+    return None
 
 
 class Manga(commands.Cog):
@@ -85,11 +91,39 @@ class Manga(commands.Cog):
 
     @discord.slash_command(description="Find the latest chapter for a given manga", guild_ids=guilds_ids)
     @discord.option("title", type=str, description="The title of the manga to search for", required=True)
-    async def search(self, ctx, title: str):
-        if m := await reddit.notsync.search_manga(title):
-            return await ctx.respond(f"Found {m.title} {m.number} {m.link}")
+    @discord.option("chapter", type=int, description="The chapter to search for", required=False)
+    async def search(self, ctx, title: str, chapter: int | None = None):
+        if chapter < 0:
+            return await ctx.respond(f"Chapter must be a positive number !")
+
+        # lc = find_last_chapter(title)
+
+        query = f"{title} {chapter}" if chapter else title
+
+        if m := await reddit.notsync.search_manga(query):
+            embed = discord.Embed(color=discord.Color.blurple())
+            embed.set_author(name=self.bot.user.name, icon_url=self.bot.user.display_avatar.url)
+            embed.set_thumbnail(url=self.bot.user.display_avatar.url)
+            embed.title = "Found something !"
+            embed.add_field(name="Title", value=m.title)
+            embed.add_field(name="Chapter", value=str(m.number))
+            embed.add_field(name="Chapter link", value=m.link, inline=False)
+            return await ctx.respond(embed=embed)
         else:
-            return await ctx.respond(f"Did not found the manga {ctx.author.mention}")
+            return await ctx.respond(f"Did not found the manga !")
+
+    @discord.slash_command(description="Setup the bot for this channel", guild_ids=guilds_ids)
+    @discord.option("channel", type=discord.TextChannel, description="The channel to setup the bot for", )
+    async def setup(self, ctx: discord.ApplicationContext, channel: discord.TextChannel | None = None):
+        channel = channel if channel else ctx.channel
+        channel_info = db.channel.unique(channel_id=channel.id)
+
+        if channel_info is None:
+            db.channel.create(channel_id=channel.id)
+            return await ctx.respond(f"Setup done for {channel.mention}")
+
+        if channel_info is not None:
+            return await ctx.respond(f"Setup already done for {channel.mention}")
 
     @discord.slash_command(
         description="Display the list of mangas registered on this channel",
@@ -99,14 +133,20 @@ class Manga(commands.Cog):
     async def queue(self, ctx: discord.ApplicationContext, channel: discord.TextChannel | None = None):
         channel: discord.TextChannel = channel if channel else ctx.channel
 
-        if not db.channel.unique(channel_id=channel.id):
-            return await ctx.respond(f"Nothing registered on {channel.mention}")
+        if not is_channel_registered(channel.id):
+            embed = discord.Embed(title=f"{channel.mention}'s tracked manga", description="Nothing registered",
+                                  color=discord.Color.blurple())
+            return await ctx.respond(embed=embed)
 
         if mangas := db.manga.many(channel_id=channel.id):
-            response = [f"- {manga.title} {manga.last_chapter}" for manga in mangas]
-            return await ctx.respond(f"Manga on {channel.mention}\n\n" + "\n".join(response))
+            response = [f"{manga.title}: **{manga.last_chapter}**" for manga in mangas]
+            embed = discord.Embed(title=f"{channel.mention}'s tracked manga", description="\n".join(response),
+                                  color=discord.Color.blurple())
+            return await ctx.respond(embed=embed)
         else:
-            return await ctx.respond(f"Nothing registered on {channel.mention}")
+            embed = discord.Embed(title=f"{channel.mention}'s tracked manga", description="Nothing registered",
+                                  color=discord.Color.blurple())
+            return await ctx.respond(embed=embed)
 
     @discord.slash_command(
         description="Register a manga to receive notifications when a new chapter is released",
@@ -117,12 +157,12 @@ class Manga(commands.Cog):
     @discord.option("title", type=str, description="The title of the manga to search for", required=True)
     async def register(self, ctx: discord.commands.context.ApplicationContext, channel: discord.TextChannel,
                        title: str):
-        await ctx.defer()
-
         channel: discord.TextChannel = channel if channel else ctx.channel
 
-        if not db.channel.unique(channel_id=channel.id):
-            db.channel.create(channel_id=channel.id)
+        await ctx.defer()
+
+        if not is_channel_registered(channel.id):
+            return await ctx.followup.send(f"Please use /setup on {channel.mention} first", ephemeral=True)
 
         if ms := db.manga.many(channel_id=channel.id):
             for m in ms:
@@ -133,7 +173,7 @@ class Manga(commands.Cog):
             if db.channel.update(channel_id=channel.id, title=title):
                 return await ctx.followup.send(f"Registered **{title}** on {channel.mention}")
             else:
-                return await ctx.followup.send(f"Error")
+                return await ctx.followup.send(f"Error", ephemeral=True)
 
         if m := await reddit.notsync.search_manga(title):
             return await ctx.followup.send(
@@ -160,11 +200,11 @@ class Manga(commands.Cog):
         if channel.guild != ctx.guild:
             return await ctx.followup.send("This channel is not from this server", ephemeral=True)
 
-        if not (db.channel.unique(channel_id=channel.id)):
-            return await ctx.followup.send(f"Nothing to remove on channel {channel.mention}")
+        if not is_channel_registered(channel.id):
+            return await ctx.followup.send(f"Please use /setup on {channel.mention} first", ephemeral=True)
 
         if not (db.manga.unique(title=title)):
-            return await ctx.followup.send(f"**{title}** has not been registered at all")
+            return await ctx.followup.send(f"**{title}** is unregistered on {channel.mention}")
 
         if db.channel.remove(channel_id=channel.id, title=title):
             return await ctx.followup.send(f"Removed **{title}** from {channel.mention}")
@@ -199,6 +239,10 @@ async def _get_new_chapter_info(title: str) -> MangaChapter | None:
 
     log.debug(f"Found new chapter for: {title} (last chapter: {m.last_chapter})")
     return MangaChapter(title=title, number=result.number, link=result.link)
+
+
+def is_channel_registered(channel_id: int) -> bool:
+    return db.channel.unique(channel_id=channel_id) is not None
 
 
 def setup(bot):
