@@ -6,7 +6,7 @@ from praw import Reddit as SyncReddit
 from praw.models import Submission as SyncSubmission
 
 from robbot import log
-from robbot.t import MangaChapter
+from robbot.t import S_MangaChapter
 from robbot.utils import get_chapter_number
 
 
@@ -19,7 +19,7 @@ def filter_post(query: str, posts: list[Submission | SyncSubmission]):
                 return x
 
     chapters: list[int] = []
-    chapter: MangaChapter | None = None
+    chapter: S_MangaChapter | None = None
 
     filtered = list(filter(filter_fun, posts))
     if len(filtered) != 0:
@@ -32,7 +32,7 @@ def filter_post(query: str, posts: list[Submission | SyncSubmission]):
         idx: int = chapters.index(last_chapter)
 
         if filtered[idx].title.lower().startswith("[disc]"):
-            chapter = MangaChapter(
+            chapter = S_MangaChapter(
                 title=filtered[idx].title[7:],
                 number=last_chapter,
                 link=filtered[idx].url
@@ -63,7 +63,7 @@ class notsync:
         return submissions
 
     @staticmethod
-    async def search_manga(query: str) -> MangaChapter | None:
+    async def search_manga(query: str) -> S_MangaChapter | None:
         log.debug(f"searching |{query}| on r/manga")
         unfiltered = await notsync.search_subreddit(subreddit="manga", query=f"[disc] {query}")
         return filter_post(query, unfiltered)
@@ -88,7 +88,7 @@ class sync:
         return submissions
 
     @staticmethod
-    def search_manga(query: str) -> MangaChapter | None:
+    def search_manga(query: str) -> S_MangaChapter | None:
         log.debug(f"searching |{query}| on r/manga")
 
         unfiltered = sync.search_subreddit(subreddit="manga", query=f"[disc] {query}")

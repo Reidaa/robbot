@@ -2,7 +2,7 @@ from pathlib import Path
 from typing import Optional
 
 from robbot import log
-from robbot.t import MangaChapter
+from robbot.t import S_MangaChapter
 
 
 def get_chapter_number(chapter_title) -> Optional[int]:
@@ -38,7 +38,7 @@ def dotenv_check():
         log.debug("Unable to load .env file, dotenv not installed, reading from environment variables")
 
 
-def format_response(chapter: MangaChapter) -> str:
+def format_response(chapter: S_MangaChapter) -> str:
     if chapter.link:
         return f"{chapter.title} {chapter.number}: {chapter.link}"
     else:

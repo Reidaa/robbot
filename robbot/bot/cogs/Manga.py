@@ -4,13 +4,12 @@ import discord
 from discord.ext import commands, tasks
 
 from robbot import log
-from robbot.db.database import PonyDB
 from robbot.services import database
 from robbot.services import reddit
-from robbot.t import MangaChapter
+from robbot.t import S_MangaChapter
 from robbot.utils import format_response
-
-db = PonyDB()
+from services.database import is_channel_registered, get_channel, create_channel, get_mangas_on_channel, get_manga, \
+    add_to_channel, update_manga, get_all_channels_id, remove_from_channel
 
 guilds_ids: list | None = []
 
@@ -22,13 +21,13 @@ else:
 
 def get_unregister_autocomplete(ctx: discord.AutocompleteContext) -> list[str]:
     target = ctx.options["channel"] if ctx.options["channel"] else ctx.interaction.channel_id
-    if not db.channel.unique(channel_id=target):
+    if not is_channel_registered(target):
         return []
-    return [manga.title for manga in db.manga.many(channel_id=target)]
+    return [manga.title for manga in get_mangas_on_channel(channel_id=target)]
 
 
 class CorrectMangaView(discord.ui.View):
-    def __init__(self, author, chapter: MangaChapter, title: str):
+    def __init__(self, author, chapter: S_MangaChapter, title: str):
         super().__init__()
         self._author = author
         self._chapter = chapter
@@ -59,11 +58,6 @@ class CorrectMangaView(discord.ui.View):
         return await interaction.response.edit_message(view=self)
 
 
-# TODO: Add a way to search the last chapter of a manga
-def find_last_chapter(title):
-    return None
-
-
 class Manga(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -73,17 +67,17 @@ class Manga(commands.Cog):
     async def notify_new_releases(self):
         log.debug("Searching for releases...")
 
-        for channel_id in db.channel.all():
+        for channel_id in get_all_channels_id():
             channel = self.bot.get_channel(channel_id)
             if not channel:
                 log.warning(f"channel {channel_id} not found")
                 continue
             releases = []
-            for manga in db.manga.many(channel_id=channel_id):
+            for manga in get_mangas_on_channel(channel_id=channel_id):
                 chapter = await _get_new_chapter_info(manga.title)
                 if chapter:
                     releases.append(format_response(chapter))
-                    db.manga.update(manga.title, chapter.number)
+                    update_manga(manga.title, chapter.number)
             for release in releases:
                 await channel.send(release)
 
@@ -95,8 +89,6 @@ class Manga(commands.Cog):
     async def search(self, ctx, title: str, chapter: int | None = None):
         if chapter < 0:
             return await ctx.respond(f"Chapter must be a positive number !")
-
-        # lc = find_last_chapter(title)
 
         query = f"{title} {chapter}" if chapter else title
 
@@ -116,10 +108,10 @@ class Manga(commands.Cog):
     @discord.option("channel", type=discord.TextChannel, description="The channel to setup the bot for", )
     async def setup(self, ctx: discord.ApplicationContext, channel: discord.TextChannel | None = None):
         channel = channel if channel else ctx.channel
-        channel_info = db.channel.unique(channel_id=channel.id)
+        channel_info = get_channel(channel.id)
 
         if channel_info is None:
-            db.channel.create(channel_id=channel.id)
+            create_channel(channel.id)
             return await ctx.respond(f"Setup done for {channel.mention}")
 
         if channel_info is not None:
@@ -138,7 +130,7 @@ class Manga(commands.Cog):
                                   color=discord.Color.blurple())
             return await ctx.respond(embed=embed)
 
-        if mangas := db.manga.many(channel_id=channel.id):
+        if mangas := get_mangas_on_channel(channel.id):
             response = [f"{manga.title}: **{manga.last_chapter}**" for manga in mangas]
             embed = discord.Embed(title=f"{channel.mention}'s tracked manga", description="\n".join(response),
                                   color=discord.Color.blurple())
@@ -164,13 +156,13 @@ class Manga(commands.Cog):
         if not is_channel_registered(channel.id):
             return await ctx.followup.send(f"Please use /setup on {channel.mention} first", ephemeral=True)
 
-        if ms := db.manga.many(channel_id=channel.id):
+        if ms := get_mangas_on_channel(channel_id=channel.id):
             for m in ms:
                 if m.title.lower() == title.lower():
                     return await ctx.followup.send(f"**{title}** is already registered")
 
-        if db.manga.unique(title=title):
-            if db.channel.update(channel_id=channel.id, title=title):
+        if get_manga(title=title):
+            if add_to_channel(channel_id=channel.id, title=title):
                 return await ctx.followup.send(f"Registered **{title}** on {channel.mention}")
             else:
                 return await ctx.followup.send(f"Error", ephemeral=True)
@@ -203,17 +195,17 @@ class Manga(commands.Cog):
         if not is_channel_registered(channel.id):
             return await ctx.followup.send(f"Please use /setup on {channel.mention} first", ephemeral=True)
 
-        if not (db.manga.unique(title=title)):
+        if not (get_manga(title=title)):
             return await ctx.followup.send(f"**{title}** is unregistered on {channel.mention}")
 
-        if db.channel.remove(channel_id=channel.id, title=title):
+        if remove_from_channel(channel_id=channel.id, title=title):
             return await ctx.followup.send(f"Removed **{title}** from {channel.mention}")
 
         return await ctx.followup.send("Error", ephemeral=True)
 
 
-async def _get_new_chapter_info(title: str) -> MangaChapter | None:
-    if not (m := db.manga.unique(title=title)):
+async def _get_new_chapter_info(title: str) -> S_MangaChapter | None:
+    if not (m := get_manga(title=title)):
         log.error(f"Error while searching for {title}: Manga not registered")
         log.debug(f"Did not found: {title}")
         return None
@@ -235,14 +227,10 @@ async def _get_new_chapter_info(title: str) -> MangaChapter | None:
 
     if not result.link:
         log.debug("Found new chapter but no link were provided")
-        return MangaChapter(title=title, number=result.number, link=None)
+        return S_MangaChapter(title=title, number=result.number, link=None)
 
     log.debug(f"Found new chapter for: {title} (last chapter: {m.last_chapter})")
-    return MangaChapter(title=title, number=result.number, link=result.link)
-
-
-def is_channel_registered(channel_id: int) -> bool:
-    return db.channel.unique(channel_id=channel_id) is not None
+    return S_MangaChapter(title=title, number=result.number, link=result.link)
 
 
 def setup(bot):

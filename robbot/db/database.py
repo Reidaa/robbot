@@ -6,7 +6,7 @@ from pony import orm
 from robbot.db.models import Channel as DBChannel
 from robbot.db.models import Manga as DBManga
 from robbot.db.models import db
-from robbot.t import Manga, Channel
+from robbot.t import S_Manga, S_Channel
 
 
 def _binder():
@@ -32,18 +32,18 @@ class PonyDB:
 
         @staticmethod
         @orm.db_session()
-        def unique(title: str) -> Manga | None:
+        def unique(title: str) -> S_Manga | None:
             if m := DBManga.get(title=title.lower()):
-                return Manga(title=m.title, last_chapter=m.last_chapter)
+                return S_Manga(title=m.title, last_chapter=m.last_chapter)
             else:
                 return None
 
         @staticmethod
         @orm.db_session()
-        def many(channel_id: int) -> list[Manga]:
+        def many(channel_id: int) -> list[S_Manga]:
             if c := DBChannel.get(channel_id=str(channel_id)):
                 return [
-                    Manga(title=i.title, last_chapter=i.last_chapter)
+                    S_Manga(title=i.title, last_chapter=i.last_chapter)
                     for i in c.mangas.select()
                 ]
             else:
@@ -51,26 +51,26 @@ class PonyDB:
 
         @staticmethod
         @orm.db_session()
-        def all() -> list[Manga]:
+        def all() -> list[S_Manga]:
             return [
-                Manga(title=i.title, last_chapter=i.last_chapter)
+                S_Manga(title=i.title, last_chapter=i.last_chapter)
                 for i in DBManga.select()
             ]
 
         @staticmethod
         @orm.db_session()
-        def update(title: str, last_chapter: int) -> Manga | None:
+        def update(title: str, last_chapter: int) -> S_Manga | None:
             if manga := DBManga.get(title=title.lower()):
                 manga.last_chapter = last_chapter
-                return Manga(title=manga.title, last_chapter=manga.last_chapter)
+                return S_Manga(title=manga.title, last_chapter=manga.last_chapter)
             else:
                 return None
 
         @staticmethod
         @orm.db_session()
-        def create(title: str, chapter: int = -1) -> Manga | None:
+        def create(title: str, chapter: int = -1) -> S_Manga | None:
             if manga := DBManga(title=title.lower(), last_chapter=chapter):
-                return Manga(title=manga.title, last_chapter=manga.last_chapter)
+                return S_Manga(title=manga.title, last_chapter=manga.last_chapter)
             else:
                 return None
 
@@ -83,21 +83,21 @@ class PonyDB:
 
         @staticmethod
         @orm.db_session()
-        def create(channel_id: int | UUID) -> Channel | None:
+        def create(channel_id: int | UUID) -> S_Channel | None:
             if c := DBChannel(channel_id=str(channel_id)):
-                return Channel(channel_id=int(c.channel_id))
+                return S_Channel(channel_id=int(c.channel_id))
             else:
                 return None
 
         @staticmethod
         @orm.db_session()
-        def update(channel_id: int, title: str) -> Channel | None:
+        def add(channel_id: int, title: str) -> S_Channel | None:
             if c := DBChannel.get(channel_id=str(channel_id)):
                 if m := DBManga.get(title=title.lower()):
                     c.mangas.add(m)
-                    return Channel(
+                    return S_Channel(
                         channel_id=int(c.channel_id),
-                        mangas=[Manga(title=i.title, last_chapter=i.last_chapter) for i in c.mangas.select()]
+                        mangas=[S_Manga(title=i.title, last_chapter=i.last_chapter) for i in c.mangas.select()]
                     )
                 else:
                     return None
@@ -106,13 +106,13 @@ class PonyDB:
 
         @staticmethod
         @orm.db_session()
-        def remove(channel_id: int, title: str) -> Channel | None:
+        def remove(channel_id: int, title: str) -> S_Channel | None:
             if c := DBChannel.get(channel_id=str(channel_id)):
                 if m := DBManga.get(title=title.lower()):
                     c.mangas.remove(m)
-                    return Channel(
+                    return S_Channel(
                         channel_id=int(c.channel_id),
-                        mangas=[Manga(title=i.title, last_chapter=i.last_chapter) for i in c.mangas.select()]
+                        mangas=[S_Manga(title=i.title, last_chapter=i.last_chapter) for i in c.mangas.select()]
                     )
                 else:
                     return None
@@ -121,11 +121,11 @@ class PonyDB:
 
         @staticmethod
         @orm.db_session()
-        def unique(channel_id: int) -> Channel | None:
+        def unique(channel_id: int) -> S_Channel | None:
             if c := DBChannel.get(channel_id=str(channel_id)):
-                return Channel(
+                return S_Channel(
                     channel_id=int(c.channel_id),
-                    mangas=[Manga(title=i.title, last_chapter=i.last_chapter) for i in c.mangas.select()]
+                    mangas=[S_Manga(title=i.title, last_chapter=i.last_chapter) for i in c.mangas.select()]
                 )
             else:
                 return None

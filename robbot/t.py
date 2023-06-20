@@ -2,19 +2,19 @@ from attrs import frozen, field
 
 
 @frozen
-class Manga:
+class S_Manga:
     title: str = field(eq=str.lower)
     last_chapter: int
 
 
 @frozen
-class MangaChapter:
+class S_MangaChapter:
     title: str
     number: int
     link: str | None = field(default=None)
 
 
 @frozen
-class Channel:
+class S_Channel:
     channel_id: int
-    mangas: list[Manga] = field(factory=list)
+    mangas: list[S_Manga] = field(factory=list)
