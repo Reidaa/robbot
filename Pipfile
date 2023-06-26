@@ -10,6 +10,7 @@ py-cord = "*"
 psycopg2 = "*"
 attrs = "*"
 praw = "*"
+httpx = "*"
 
 [dev-packages]
 pytest = "*"
