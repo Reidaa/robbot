@@ -1,8 +1,10 @@
 from pathlib import Path
 from typing import Optional
+import re
 
 from robbot import log
-from robbot.t import S_MangaChapter
+
+CLEANR = re.compile('<.*?>|&([a-z0-9]+|#[0-9]{1,6}|#x[0-9a-f]{1,6});')
 
 
 def get_chapter_number(chapter_title) -> Optional[int]:
@@ -38,8 +40,5 @@ def dotenv_check():
         log.debug("Unable to load .env file, dotenv not installed, reading from environment variables")
 
 
-def format_response(chapter: S_MangaChapter) -> str:
-    if chapter.link:
-        return f"{chapter.title} {chapter.number}: {chapter.link}"
-    else:
-        return f"A new chapter for {chapter.title} was found but no link were provided"
+def cleanhtml(raw_html: str) -> str:
+    return re.sub(CLEANR, '', raw_html)

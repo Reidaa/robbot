@@ -1,6 +1,6 @@
 import httpx
 
-from services.mangaupdate.models import SearchResult, Error
+from services.mangaupdate.models import SearchResult, MangaupdateError, SeriesRecord
 
 username = "Reidaas"
 password = "QkRy5N#Jfwce!G"
@@ -25,7 +25,7 @@ class MangaUpdatesAuth(httpx.Auth):
 
         match response.status_code:
             case 400:
-                raise Exception(response_dict["reason"])
+                raise MangaupdateError(**response_dict)
             case 200:
                 self.__token = response_dict["context"]["session_token"]
             case _:
@@ -46,15 +46,13 @@ class AsyncMangaUpdateClient:
 
     def __init__(self):
         self._base_url = "https://api.mangaupdates.com/v1"
-        self._async_client = httpx.AsyncClient(base_url=self._base_url)
         self.auth = MangaUpdatesAuth(self._base_url, username, password)
 
-    async def search_series(self, title: str, body_params: dict | None = None) -> tuple[
-        SearchResult | None, Error | None]:
+    async def search_series(self, title: str, body_params: dict | None = None) -> SearchResult:
         if body_params is None:
             body_params = {}
 
-        async with self._async_client as client:
+        async with httpx.AsyncClient(base_url=self._base_url) as client:
             response = await client.post(
                 "/series/search", json={"search": title, **body_params}, auth=self.auth)
 
@@ -62,9 +60,21 @@ class AsyncMangaUpdateClient:
 
         match response.status_code:
             case 400:
-                return None, Error(**response_dict)
+                raise MangaupdateError(**response_dict)
             case 200:
-                return SearchResult(**response_dict), None
+                return SearchResult(**response_dict)
+
+    async def get_series(self, series_id: str) -> SeriesRecord:
+        async with httpx.AsyncClient(base_url=self._base_url) as client:
+            response = await client.get(f"/series/{series_id}", auth=self.auth)
+
+        response_dict = response.json()
+
+        match response.status_code:
+            case 400:
+                raise MangaupdateError(**response_dict)
+            case 200:
+                return SeriesRecord(**response_dict)
 
 
 client = AsyncMangaUpdateClient()

@@ -12,29 +12,27 @@ dotenv_check()
 
 import robbot.log as log
 from robbot.bot.Bot import Bot
-from robbot.db.database import PonyDB
 from robbot.services import reddit
 
-db = PonyDB()
 
 
-def update_db():
-    log.info("Updating database...")
-    for manga in db.manga.all():
-        if manga.last_chapter == -1:
-            if r := reddit.sync.search_manga(manga.title):
-                log.info(f"Updating {manga.title} to chapter {r.number}")
-                db.manga.update(manga.title, r.number)
-            else:
-                continue
-        else:
-            continue
-    log.info("Finished updating database")
+# def update_db():
+#     log.info("Updating database...")
+#     for manga in db.manga.all():
+#         if manga.last_chapter == -1:
+#             if r := reddit.sync.search_manga(manga.title):
+#                 log.info(f"Updating {manga.title} to chapter {r.number}")
+#                 db.manga.update(manga.title, r.number)
+#             else:
+#                 continue
+#         else:
+#             continue
+#     log.info("Finished updating database")
 
 
 def setup():
-    update_db()
-
+    # update_db()
+    pass
 
 class Main:
     def __init__(self):

@@ -1,0 +1,20 @@
+@token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzZXNzaW9uIjoiMzk5NWE4N2EtYzdjZi00NjQwLWFjNjEtNWNhYmYxODc4YmU2IiwidGltZV9jcmVhdGVkIjoxNjg3NTM4NDY5fQ.8H0mkfUXNYdKC3XPmu-neKxHNei-GQ7ouBlqbC7ydGc"
+
+###  Login
+PUT https://api.mangaupdates.com/v1/account/login
+Content-Type: application/json
+
+{
+    "username": "Reidaas",
+    "password": "QkRy5N#Jfwce!G"
+}
+
+###  Search Manga
+POST https://api.mangaupdates.com/v1/series/search
+Content-Type: application/json
+Authorization: "Bearer {{token}}"
+
+{
+  "search": "one piece",
+  "type": "Manga"
+}

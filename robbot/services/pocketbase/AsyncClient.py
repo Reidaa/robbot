@@ -1,6 +1,6 @@
 import httpx
 
-from robbot.services.pocketbase.models import ListResult, Error, RecordResponse
+from robbot.services.pocketbase.models import ListResult, RecordResponse, PocketbaseError
 
 
 class AsyncCollection:
@@ -8,8 +8,7 @@ class AsyncCollection:
         self._client = client
         self._collection_name = collection_name
 
-    async def get_list(self, page: int = 1, per_page: int = 30, query_params: dict | None = None) -> tuple[
-        ListResult | None, Error | None]:
+    async def get_list(self, page: int = 1, per_page: int = 30, query_params: dict | None = None) -> ListResult:
         if query_params is None:
             query_params = {}
 
@@ -26,26 +25,44 @@ class AsyncCollection:
 
         match response.status_code:
             case 200:
-                return ListResult(**response_dict), None
+                return ListResult(**response_dict)
             case _:
-                return None, Error(**response_dict)
+                raise PocketbaseError(**response_dict)
 
-    async def get_full_list(self, per_page: int = 200, query_params: dict | None = None) -> tuple[
-        list[RecordResponse] | None, Error | None]:
-        raise NotImplementedError
+    async def get_full_list(self, per_page: int = 200, query_params: dict | None = None) -> list[RecordResponse]:
+        """Get all records from the collection.
 
-    async def get_first_list_item(self, filter: str, query_params: dict = None) -> tuple[
-        RecordResponse | None, Error | None]:
+        Raises:
+            PocketbaseError: If the request fails.
+        """
         if query_params is None:
             query_params = {}
-        response, error = await self.get_list(1, 1, query_params={"filter": filter, **query_params})
-        if error:
-            return None, error
-        if len(response.items) == 0:
-            return None, Error(code=404, message="The requested resource wasn't found.", data={})
-        return RecordResponse(**response.items[0]), None
 
-    async def get_one(self, id: str, query_params: dict = None) -> tuple[RecordResponse | None, Error | None]:
+        result = []
+
+        async def request(page: int):
+            response = await self.get_list(page, per_page, query_params)
+            items = response.items
+            total_items = response.totalItems
+
+            result.extend(items)
+
+            if len(items) and total_items > len(result):
+                return await request(page + 1)
+
+            return result
+
+        return await request(1)
+
+    async def get_first_list_item(self, filter: str, query_params: dict = None) -> RecordResponse:
+        if query_params is None:
+            query_params = {}
+        response = await self.get_list(1, 1, query_params={"filter": filter, **query_params})
+        if len(response.items) == 0:
+            raise PocketbaseError(code=404, message="The requested resource wasn't found.", data={})
+        return RecordResponse(**response.items[0])
+
+    async def get_one(self, id: str, query_params: dict = None) -> RecordResponse:
         if query_params is None:
             query_params = {}
 
@@ -58,12 +75,11 @@ class AsyncCollection:
 
         match response.status_code:
             case 200:
-                return RecordResponse(**response_dict), None
+                return RecordResponse(**response_dict)
             case _:
-                return None, Error(**response_dict)
+                raise PocketbaseError(**response_dict)
 
-    async def create(self, body_params: dict = None, query_params: dict = None) -> tuple[
-        RecordResponse | None, Error | None]:
+    async def create(self, body_params: dict = None, query_params: dict = None) -> RecordResponse:
         if query_params is None:
             query_params = {}
         if body_params is None:
@@ -79,12 +95,24 @@ class AsyncCollection:
 
         match response.status_code:
             case 200:
-                return RecordResponse(**response_dict), None
+                return RecordResponse(**response_dict)
             case _:
-                return None, Error(**response_dict)
+                raise PocketbaseError(**response_dict)
 
-    async def update(self, id: str, body_params: dict = None, query_params: dict = None) -> tuple[
-        RecordResponse | None, Error | None]:
+    async def update(self, id: str, body_params: dict = None, query_params: dict = None) -> RecordResponse:
+        """Updates a record.
+
+        Args:
+            id: The id of the record to update.
+            body_params: The new values for the record. Defaults to None.
+            query_params: The query parameters. Defaults to None.
+
+        Return:
+            RecordResponse: The updated record.
+
+        Raises:
+            PocketbaseError: If the request failed.
+        """
 
         if query_params is None:
             query_params = {}
@@ -101,11 +129,11 @@ class AsyncCollection:
 
         match response.status_code:
             case 200:
-                return RecordResponse(**response_dict), None
+                return RecordResponse(**response_dict)
             case _:
-                return None, Error(**response_dict)
+                raise PocketbaseError(**response_dict)
 
-    async def delete(self, id: str, query_params: dict = None) -> tuple[bool, Error | None]:
+    async def delete(self, id: str, query_params: dict = None) -> bool:
         if query_params is None:
             query_params = {}
 
@@ -116,9 +144,9 @@ class AsyncCollection:
 
         match response.status_code:
             case 204:
-                return True, None
+                return True
             case _:
-                return False, Error(**response.json())
+                raise PocketbaseError(**response.json())
 
 
 class AsyncPocketBaseClient:
@@ -146,12 +174,8 @@ if __name__ == "__main__":
     import logging
     from pprint import pprint
 
-    record_id = "d435x41bnmn2iy5"
-    title = "jujutsu kaisen"
-
 
     async def main():
-
         pb = AsyncPocketBaseClient(base_url="http://localhost:8080").start()
 
         logging.basicConfig(
@@ -159,23 +183,15 @@ if __name__ == "__main__":
             datefmt="%Y-%m-%d %H:%M:%S",
             level=logging.DEBUG
         )
-        # response, error = await pb.collection("channels").get_one(record_id, query_params={"expand": "mangas"})
-        #
-        # if error:
-        #     pprint(error)
-        #
-        # if response:
-        #     pprint(response)
 
-        channel_record, error = await pb.collection("channels"). \
-            get_first_list_item(filter=f"channel_id={1082820333477838800}", query_params={"expand": "mangas"})
+        async def test():
+            result = await pb.collection("mangas").get_full_list()
+            return result
 
-        if error:
-            print(False)
+        channel_id = "1082820333477838800"
+        title = "chainsaw man"
 
-        for manga_record in channel_record.expand["mangas"]:
-            if manga_record["name"] == title:
-                print(True)
+        pprint(await test())
 
         await pb.stop()
 
