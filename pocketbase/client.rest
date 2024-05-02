@@ -1,0 +1,45 @@
+@hostname = http://localhost
+@port = 8080
+@host = {{hostname}}:{{port}}
+
+
+### admin auth
+POST {{host}}/api/admins/auth-with-password
+Content-Type: application/json
+
+{
+    "identity": "",
+    "password": ""
+}
+
+### search a manga
+GET {{host}}/api/collections/mangas/records?filter=(name~'jujutsu')
+
+### search a manga
+GET {{host}}/api/collections/mangas/records?filter=(name~'JUJUTSU')
+
+### search a manga
+GET {{host}}/api/collections/mangas/records?filter=(name='jujutsu')
+
+### search a manga
+GET {{host}}/api/collections/mangas/records?filter=(name='JUJUTSU')
+
+### search a channel
+GET {{host}}/api/collections/channels/records?filter=(channel_id=551475962273857540)
+
+
+### view a channel
+GET {{host}}/api/collections/channels/records/j8ykbwy45ws279l?expand=mangas
+
+
+### 
+PATCH {{host}}/api/collections/channels/records/j8ykbwy45ws279l
+Authorization: ""
+Content-Type: "application/json"
+
+{
+   "mangas":  [
+     "qzkleewfheazft2",
+     "qozc3ra4bcw2i8u"
+   ]
+}

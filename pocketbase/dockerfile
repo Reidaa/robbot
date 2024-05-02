@@ -1,0 +1,23 @@
+FROM alpine:latest
+
+ARG PB_VERSION=0.17.4
+
+RUN apk add --no-cache \
+    unzip \
+    ca-certificates \
+    curl
+
+
+# download and unzip PocketBase
+ADD https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/pocketbase_${PB_VERSION}_linux_amd64.zip /tmp/pb.zip
+RUN unzip /tmp/pb.zip -d /pb/
+
+# /pb/pb_data # stores your application data, uploaded files, etc. (usually should be added in .gitignore).
+# /pb/pb_migrations # contains JS migration files with your collection changes (can be safely commited in your repository).
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD ["curl", "--fail", "http://localhost:8080/api/health", "||", "exit", "1" ]
+
+# start PocketBase
+CMD ["/pb/pocketbase", "serve", "--http=0.0.0.0:8080"]

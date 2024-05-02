@@ -1,0 +1,4 @@
+*.db
+pb/data/*
+
+!pb/data/.gitkeep
