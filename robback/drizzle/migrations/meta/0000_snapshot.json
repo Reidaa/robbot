@@ -1,9 +1,66 @@
 {
-  "id": "4893cd41-1e35-44f4-b16e-2719fe48a3ce",
+  "id": "1657376a-c018-42f0-90c8-c96a3d351f4d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "public.mangaServer": {
+      "name": "mangaServer",
+      "schema": "",
+      "columns": {
+        "manga_id": {
+          "name": "manga_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "server_id": {
+          "name": "server_id",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "mangaServer_manga_id_manga_id_fk": {
+          "name": "mangaServer_manga_id_manga_id_fk",
+          "tableFrom": "mangaServer",
+          "tableTo": "manga",
+          "columnsFrom": [
+            "manga_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "mangaServer_server_id_server_id_fk": {
+          "name": "mangaServer_server_id_server_id_fk",
+          "tableFrom": "mangaServer",
+          "tableTo": "server",
+          "columnsFrom": [
+            "server_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "mangaServer_manga_id_server_id_pk": {
+          "name": "mangaServer_manga_id_server_id_pk",
+          "columns": [
+            "manga_id",
+            "server_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {}
+    },
     "public.manga": {
       "name": "manga",
       "schema": "",
@@ -20,6 +77,20 @@
           "type": "varchar",
           "primaryKey": false,
           "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {},
@@ -33,9 +104,23 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "integer",
+          "type": "bigint",
           "primaryKey": true,
           "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {},

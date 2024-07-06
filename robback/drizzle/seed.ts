@@ -22,6 +22,12 @@ async function main() {
         title: 'Boku no Hero Academia',
       },
     ]);
+
+    await db.insert(ServerTable).values([
+      {
+        id: BigInt('1082820297876574239'),
+      },
+    ]);
   } catch (error) {
     console.error(error);
     throw new Error('Failed to seed database');
