@@ -1,19 +1,19 @@
 {
     "extends": "@tsconfig/node20/tsconfig.json",
     "compilerOptions": {
-        "noEmit": true,
         "outDir": "dist",
-        "baseUrl": ".",
-        "allowUnusedLabels": false,
         "allowUnreachableCode": false,
+        "allowUnusedLabels": false,
+        "baseUrl": ".",
+        "declaration": true,
+        "forceConsistentCasingInFileNames": true,
         "noFallthroughCasesInSwitch": true,
         "noUncheckedIndexedAccess": true,
         "noUnusedLocals": true,
         "noUnusedParameters": true,
-        "forceConsistentCasingInFileNames": true,
-        "declaration": true,
+        "pretty": true,
+        "resolveJsonModule": true,
         "sourceMap": true,
-        "resolveJsonModule": true
     },
     "include": [
         "src",
