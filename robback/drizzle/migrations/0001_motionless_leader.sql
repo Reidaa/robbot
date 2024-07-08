@@ -1,0 +1,1 @@
+ALTER TABLE "manga" ADD COLUMN "mangadex_id" uuid NOT NULL;

@@ -8,6 +8,13 @@
       "when": 1720239886880,
       "tag": "0000_next_wolfsbane",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1720406580310,
+      "tag": "0001_motionless_leader",
+      "breakpoints": true
     }
   ]
 }

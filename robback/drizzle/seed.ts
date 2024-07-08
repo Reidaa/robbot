@@ -3,6 +3,7 @@ import 'dotenv/config';
 import {neon} from '@neondatabase/serverless';
 import {drizzle} from 'drizzle-orm/neon-http';
 import {MangaTable, ServerTable} from './schema';
+import {uuid} from 'drizzle-orm/pg-core';
 
 const sql = neon(process.env.DATABASE_URL as string);
 const db = drizzle(sql);
@@ -17,9 +18,11 @@ async function main() {
     await db.insert(MangaTable).values([
       {
         title: 'Chainsaw Man',
+        mangadexId: 'a77742b1-befd-49a4-bff5-1ad4e6b0ef7b',
       },
       {
         title: 'Boku no Hero Academia',
+        mangadexId: '4f3bcae4-2d96-4c9d-932c-90181d9c873e',
       },
     ]);
 

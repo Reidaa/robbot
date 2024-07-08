@@ -12,6 +12,7 @@ import {
 export const MangaTable = pgTable('manga', {
   id: uuid('id').primaryKey().defaultRandom(),
   title: varchar('title').notNull(),
+  mangadexId: uuid('mangadex_id').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
