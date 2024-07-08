@@ -8,3 +8,7 @@
 
 * Utiliser MangaDex et son API afin d'éviter de nombreux problemes de normalisation vis a vis des mangas et leurs titres ...
   * CONS: peut etre pas mis a jour tres rapidement, pour un MVP ca fera l'affaire
+
+## Credits
+
+[MangaDex](https://mangadex.org/) for their life saving API
