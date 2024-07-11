@@ -5,7 +5,6 @@
     "outDir": "build",
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
-    "baseUrl": ".",
     "declaration": true,
     "forceConsistentCasingInFileNames": true,
     "noEmitOnError": true,
@@ -17,7 +16,25 @@
     "pretty": true,
     "resolveJsonModule": true,
     "sourceMap": true,
-    "noStrictGenericChecks": false
+    "strict": true,
+    "noStrictGenericChecks": false,
+    "paths": {
+      "@services/*": [
+        "./src/services/*"
+      ],
+      "@controllers/*": [
+        "./src/controllers/*"
+      ],
+      "@src/*": [
+        "./src/*"
+      ],
+      "@test/*": [
+        "./test/*"
+      ],
+      "@drizzle/*": [
+        "./drizzle/*"
+      ]
+    }
   },
   "include": [
     "src/**/*.ts",

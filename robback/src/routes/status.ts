@@ -17,7 +17,7 @@ export default async function status(
     url: '/status',
     handler: onStatus,
     schema: {
-      description: 'Returns status and version of the application',
+      description: 'Returns status of the application',
       response: {
         200: S.object().prop('status', S.string()),
       },

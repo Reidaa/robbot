@@ -1,5 +1,5 @@
 import t from 'tap';
-import {build} from '../helper';
+import {build} from '@test/helper';
 
 t.test('Status route', async t => {
   const fastify = await build(t);
