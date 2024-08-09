@@ -19,29 +19,13 @@
     "strict": true,
     "noStrictGenericChecks": false,
     "paths": {
-      "@services/*": [
-        "./src/services/*"
-      ],
-      "@controllers/*": [
-        "./src/controllers/*"
-      ],
-      "@src/*": [
-        "./src/*"
-      ],
-      "@test/*": [
-        "./test/*"
-      ],
-      "@drizzle/*": [
-        "./drizzle/*"
-      ]
+      "@services/*": ["./src/services/*"],
+      "@controllers/*": ["./src/controllers/*"],
+      "@src/*": ["./src/*"],
+      "@test/*": ["./test/*"],
+      "@drizzle/*": ["./drizzle/*"]
     }
   },
-  "include": [
-    "src/**/*.ts",
-    "test/**/*.ts"
-  ],
-  "exclude": [
-    "build",
-    "node_modules"
-  ]
+  "include": ["src/**/*.ts", "test/**/*.ts"],
+  "exclude": ["build", "node_modules"]
 }
