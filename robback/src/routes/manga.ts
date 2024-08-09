@@ -9,10 +9,6 @@ interface ISearch {
   title: string;
 }
 
-interface ITrack {
-  manga_id: string;
-}
-
 export default async function manga(instance: FastifyInstance) {
   instance.route({
     method: 'GET',
@@ -38,22 +34,4 @@ export default async function manga(instance: FastifyInstance) {
       }
     },
   });
-  // instance.route({
-  //   method: "POST",
-  //   url: "/track",
-  //   schema: {
-  //     querystring: S.object().prop("manga_id", S.string().format("uuid")).required(["manga_id"])
-  //   },
-  //   handler: async (req: FastifyRequest<{Querystring: ITrack}>) => {
-  //     try {
-  //       const {manga_id} = req.query;
-
-  //       const mangadex = new Mangadex();
-  //       const info = await mangadex.getOneManga(manga_id);
-  //       return {};
-  //     } catch (err) {
-  //       return {};
-  //     }
-  //   },
-  // });
 }

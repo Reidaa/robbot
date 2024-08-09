@@ -1,9 +1,9 @@
 import 'dotenv/config';
 
-import {server} from '@src/server';
+import {server} from '@src/server.js';
 
 async function main() {
   return await server();
 }
 
-main();
+main().then();

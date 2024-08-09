@@ -1,7 +1,7 @@
 import Fastify from 'fastify';
 import fp from 'fastify-plugin';
 
-import App from '@src/app';
+import App from '@src/app.js';
 
 export async function server() {
   const fastify = Fastify({

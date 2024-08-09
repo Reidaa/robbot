@@ -1,31 +1,25 @@
-import axios, {isCancel, AxiosError, Method, AxiosRequestConfig} from 'axios';
+import axios, {Method} from 'axios';
 
 export class Mangadex {
-  private base_url: string;
+  private readonly base_url: string;
 
   constructor() {
     this.base_url = 'https://api.mangadex.org';
   }
 
-  public async getManyMangas(title: string) {
-    const response = await this._call('GET', '/manga', {
+  public async getManyMangas(title: string, translated_language: string = "en") {
+    return await this._call('GET', '/manga', {
       title: title,
-      'availableTranslatedLanguage[]': 'en',
+      'availableTranslatedLanguage[]': translated_language,
     });
-
-    return response;
   }
 
   public async getOneManga(manga_id: string) {
-    const response = await this._call('GET', `/manga/${manga_id}`);
-
-    return response;
+    return await this._call('GET', `/manga/${manga_id}`);
   }
 
   public async getOneMangaFeed(manga_id: string) {
-    const response = await this._call('GET', `/manga/${manga_id}/feed`);
-
-    return response;
+    return await this._call('GET', `/manga/${manga_id}/feed`);
   }
 
   private async _call(
