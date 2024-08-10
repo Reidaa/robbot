@@ -7,6 +7,9 @@
 ## TODO
 
 - [ ] Make it deploy
+  - [ ] Setup a VPS
+    - [ ] Install docker
+  - [ ] Make the pipeline to build and push the project's docker image
 - [ ] Protect the API
 - [ ] Test with discord front using the /search route
 - [ ] Route to track new mangas on a given discord server
@@ -17,8 +20,8 @@
 
 ## Idée(s)
 
-* Utiliser MangaDex et son API afin d'éviter de nombreux problemes de normalisation vis a vis des mangas et leurs titres ...
-  * CONS: peut etre pas mis a jour tres rapidement, pour un MVP ca fera l'affaire
+- Utiliser MangaDex et son API afin d'éviter de nombreux problemes de normalisation vis a vis des mangas et leurs titres ...
+  - CONS: peut etre pas mis a jour tres rapidement, pour un MVP ca fera l'affaire
 
 ## Credits
 
