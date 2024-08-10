@@ -1,7 +1,7 @@
 import {neon} from '@neondatabase/serverless';
 import {drizzle} from 'drizzle-orm/neon-http';
 import * as schema from '@drizzle/schema';
-import { env } from "@src/env"
+import {env} from '@src/env';
 
 // const client = neon(process.env.DATABASE_URL as string);
 const client = neon(env.POSTGRES_URL);

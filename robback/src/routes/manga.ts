@@ -5,6 +5,11 @@ import {Mangadex} from '@services/mangadex';
 
 export const autoPrefix = '/manga';
 
+const LANGUAGES = {
+  EN: 'en',
+  FR: 'fr',
+};
+
 interface ISearch {
   title: string;
 }
@@ -14,7 +19,10 @@ export default async function manga(instance: FastifyInstance) {
     method: 'GET',
     url: '/search',
     schema: {
-      querystring: S.object().prop('title', S.string()).required(['title']),
+      querystring: S.object()
+        .prop('title', S.string())
+        .required()
+        .prop('language', S.string().enum(Object.values(LANGUAGES))),
     },
     handler: async (req: FastifyRequest<{Querystring: ISearch}>) => {
       try {

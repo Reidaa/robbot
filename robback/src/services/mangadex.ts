@@ -7,7 +7,10 @@ export class Mangadex {
     this.base_url = 'https://api.mangadex.org';
   }
 
-  public async getManyMangas(title: string, translated_language: string = "en") {
+  public async getManyMangas(
+    title: string,
+    translated_language: string = 'en'
+  ) {
     return await this._call('GET', '/manga', {
       title: title,
       'availableTranslatedLanguage[]': translated_language,
