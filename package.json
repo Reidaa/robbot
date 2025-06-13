@@ -1,0 +1,32 @@
+{
+  "name": "robbot.moe",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,md,json}\"",
+    "typecheck": "turbo run typecheck",
+    "prepare": "husky",
+    "lint:staged": "lint-staged"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "prettier": "^3.5.3",
+    "turbo": "latest",
+    "typescript": "^5.8.3",
+    "lint-staged": "^16.1.0"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "bun@1.2.16",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "lint-staged": {
+    "*": "prettier --ignore-unknown --write"
+  }
+}

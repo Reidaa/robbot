@@ -1,0 +1,21 @@
+{
+  "name": "@robbot/back",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit && echo 'Type checking completed'",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check"
+  },
+  "dependencies": {
+    "@robbot/core": "*",
+    "discord.js": "^14.19.3"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.16",
+    "typescript": "^5.8.3",
+    "@robbot/typescript-config": "workspace:*"
+  },
+  "packageManager": "bun@1.2.16"
+}
